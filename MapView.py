@@ -26,7 +26,17 @@ class MapView(Gtk.DrawingArea):
         Implements draw slot
         - Draw a test circle in middle of widget
         """
+        ## Set color to 95% black
+        cr.set_source_rgb(0.05, 0.05, 0.05)
+        ## Draw rectangle over entire widget
+        cr.rectangle( 0,0, self.get_allocated_width(), self.get_allocated_height() )
+        ## Fill rectangle
+        cr.fill()
+
+        ## Set color to red
         cr.set_source_rgb(1, 0, 0)
+        ## Draw small circle in center of screen
         cr.arc(self.get_allocation().width/2, self.get_allocation().height/2, 2, 0, 6.2830)
         #print cr.clip_extents()
+        ## Fill circle
         cr.fill()
