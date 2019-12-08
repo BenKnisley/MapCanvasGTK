@@ -13,7 +13,7 @@ gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, Gdk, Gio, GObject
 
 ## Import MapWidget
-import MapView
+from MapView import MapView
 
 
 class MyApplication(Gtk.Application):
@@ -53,9 +53,16 @@ class mainWindow(Gtk.Window):
         self.set_title("Map Viewer")
         #self.set_border_width(10)
 
+        ## Create widgets
+        self.map = MapView()
+
+
+
         ## Create, pack, and add layout to window
         self.layout = Gtk.VBox()
-        #@ Pack Stuff here
+        
+        self.layout.pack_start(self.map, True, True, 0)
+
         self.add(self.layout)
 
 
