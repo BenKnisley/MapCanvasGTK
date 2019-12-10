@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
 """
-Author: Ben Knisley [benknisley@gmail.com]
-Date: 8 December, 2019
-
 Project: MapViewer
 Title: Main Executable
+Author: Ben Knisley [benknisley@gmail.com]
+Date: 8 December, 2019
 Function: UI entry point for user
 """
 ## Import PyGtk Modules
@@ -60,7 +59,7 @@ class mainWindow(Gtk.Window):
 
         ## Create, pack, and add layout to window
         self.layout = Gtk.VBox()
-        
+
         self.layout.pack_start(self.map, True, True, 0)
 
         self.add(self.layout)
