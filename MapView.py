@@ -14,6 +14,7 @@ from gi.repository import Gtk, Gdk, Gio, GObject
 ## Import MapEngine
 import MapEngine
 
+
 class MapView(Gtk.DrawingArea):
     def __init__(self):
         ## Implement inheritance from Gtk.Window & Gtk.GObject
@@ -23,14 +24,14 @@ class MapView(Gtk.DrawingArea):
         ## Create MapEngine Object
         self.map = MapEngine.MapEngine()
 
-        self.map.setPOI(self.map.geo2pix((39.205833, -83.613889)))
-
         ## Connect Stuff
         self.connect("draw", self.draw)
+
 
     def callRedraw(self, caller):
         """ Causes canvas to redraw self """
         self.queue_draw()
+
 
     def draw(self, caller, cr):
         """ """
