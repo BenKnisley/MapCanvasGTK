@@ -15,11 +15,23 @@ from gi.repository import Gtk, Gdk, Gio, GObject
 import MapEngine
 
 
+class ToolController:
+    def __init__(self):
+        GObject.GObject.__init__(self)
+
+
 class MapView(Gtk.DrawingArea):
     def __init__(self):
         ## Implement inheritance from Gtk.Window & Gtk.GObject
         Gtk.DrawingArea.__init__(self)
         GObject.GObject.__init__(self)
+
+        ## Add capability to detect mouse events
+        self.add_events(Gdk.EventMask.BUTTON_PRESS_MASK)
+        self.add_events(Gdk.EventMask.BUTTON_RELEASE_MASK)
+        self.add_events(Gdk.EventMask.BUTTON1_MOTION_MASK)
+        self.add_events(Gdk.EventMask.SCROLL_MASK)
+
 
         ## Create MapEngine Object
         self.map = MapEngine.MapEngine()

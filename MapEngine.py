@@ -25,17 +25,17 @@ class MapEngine:
         self._WGS84 = pyproj.Proj("EPSG:4326")
 
         ## Variable projection
-        #self._proj = pyproj.Proj(proj='latlong', ellps='WGS84', datum='WGS84') ## Default to WGS84
-        self._proj = pyproj.Proj("EPSG:32023") ## Default to WGS84
+        self._proj = pyproj.Proj("EPSG:4326")
 
         ## Set default scale
-        self._scale = 0.0005 ## Default to 1.0
-        #self._scale = 100 ## Default to 1.0
+        self._scale = 5.0 ## Default to 1.0
+
 
 
         #! Figure this shit out
-        self._coord = (40.0, -83.0) ## rep for
+        self._coord = (-83.0, 40.0) ## rep for
         self._POI = self.geo2proj(self._coord) ## rep for projection
+        print(self._POI)
 
         ## Set default size
         self._size = (500,500) ## Default to 500px x 500px
@@ -45,7 +45,7 @@ class MapEngine:
         #self.points = [(0.0, 0.0), (0.1,0.1), (-0.2,0.2), (0.8,-0.5)]
         #self.points = [(40.205833, -83.613889), (39.305833, -83.713889), (39.405833, -83.613889)]
         self.points = dataLoader.getData()
-        self.points = [(40.0, -83.0)] + self.points
+        self.points = [(-83.0, 40.0)] + self.points
 
     def getProjection(self):
         return self._proj
