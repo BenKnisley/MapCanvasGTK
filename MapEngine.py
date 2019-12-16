@@ -26,6 +26,7 @@ class MapEngine:
 
         ## Variable projection
         self._proj = pyproj.Proj("EPSG:4326")
+        #self._proj = pyproj.Proj("+proj=eqc +lat_ts=0 +lat_0=0 +lon_0=0 +x_0=0 +y_0=0 +a=6371000 +b=6371000 +units=m +no_defs")
 
         ## Set default scale
         self._scale = 5.0 ## Default to 1.0
@@ -60,6 +61,12 @@ class MapEngine:
     def getPOI(self):
         return self._POI
 
+    def zoomIn(self):
+        self._scale += (self._scale * 0.1)
+
+    def zoomOut(self):
+        self._scale -= (self._scale * 0.1)
+
     def setScale(self, newScale):
         self._scale = newScale
 
@@ -78,6 +85,7 @@ class MapEngine:
         return (x, y)
 
 
+
     def geo2proj(self, geoPoint): ## geoPoint tuple (lat, lon)
         """
         """
@@ -85,10 +93,12 @@ class MapEngine:
             lat = [coord[0] for coord in geoPoint]
             lon = [coord[1] for coord in geoPoint]
             x, y = pyproj.transform(self._WGS84, self._proj, lat, lon)
+            #x,y = y,x
             projPoint = list( zip(x,y) )
         else:
             lat, lon = geoPoint
             x, y = pyproj.transform(self._WGS84, self._proj, lat, lon)
+            #x,y = y,x
             projPoint = (x, y)
 
         return projPoint
@@ -119,6 +129,8 @@ class MapEngine:
             pixelX = ((x - focusX) * self._scale) + centerX
             pixelY = -((y - focusY) * self._scale) + centerY
 
+            #pixelX, pixelY = pixelY, pixelX
+
             pixPoint = list( zip(pixelX, pixelY) )
 
         else:
@@ -132,7 +144,22 @@ class MapEngine:
 
     def pix2proj(self, pixPoint):
         """ """
-        None
+        ## Unpack points
+        focusX, focusY = self._POI
+        centerX, centerY = self.getCenterPoint()
+        pixX, pixY = pixPoint
+
+        ##
+        projX = ((pixX - centerX) / self._scale) + focusX
+        projY = ((pixY - centerY) / self._scale) + focusY
+
+        ##
+        projPoint = (projX, projY)
+
+
+        ##
+        return projPoint
+
 
     def geo2pix(self, geoPoint):
         """ """
@@ -142,7 +169,9 @@ class MapEngine:
 
     def pix2geo(self, pixPoint):
         """ """
-        None
+        projPoint = self.pix2proj(pixPoint)
+        geoPoint = self.proj2geo(projPoint)
+        return geoPoint
 
     def drawMapOnCanvas(self, cr):
         """

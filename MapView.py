@@ -11,13 +11,95 @@ import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, Gdk, Gio, GObject
 
+import time
+
 ## Import MapEngine
 import MapEngine
 
 
-class ToolController:
-    def __init__(self):
+class ToolController(GObject.GObject):
+    def __init__(self, map):
         GObject.GObject.__init__(self)
+
+        self.map = map
+
+
+        ## Define mouse button trackers
+        self.leftHeld = False
+        self.LDragPOS = (None, None)
+
+        self.midHeld = False
+        self.MDragPOS = (None, None)
+
+        self.rightHeld = False
+        self.RDragPOS = (None, None)
+
+
+    def buttonPress(self, caller, click):
+        if click.button == 1: ## Left click
+            self.leftHeld = True
+            self.LDragPOS = (click.x, click.y)
+
+        elif click.button == 2: ## Middle click
+            self.midHeld = True
+            self.MDragPOS = (click.x, click.y)
+
+        else: ## Right click
+            self.rightHeld = True
+            self.RDragPOS = (click.x, click.y)
+
+
+    def buttonRelease(self, caller, click):
+        if click.button == 1: ## Left click
+            self.leftHeld = False
+            self.LDragPOS = (None, None)
+        elif click.button == 2: ## Middle click
+            self.midHeld = False
+            self.MDragPOS = (None, None)
+        else: ## Right click
+            self.rightHeld = False
+            self.RDragPOS = (None, None)
+
+
+    def mouseDrag(self, caller, move):
+        if self.leftHeld:
+            print("Left Drag")
+
+
+        if self.midHeld:
+            ## Unpack Points
+            cenX, cenY = self.map.getCenterPoint()
+            orgnX, orgnY = self.MDragPOS
+
+            ## Calulate new pixel point from drag distance
+            newPixPoint = ( (cenX + (orgnX - move.x)), (cenY + -(orgnY - move.y)) )
+
+            ## Calulate new map POI
+            newProjPoint = self.map.pix2proj(newPixPoint)
+            self.map.setPOI(newProjPoint)
+
+            ## Set drag orgin point
+            self.MDragPOS = (move.x, move.y)
+
+            ## Call redraw
+            caller.callRedraw(self)
+
+
+        if self.rightHeld:
+            #print("Right Drag")
+            None
+
+
+    def scroll(self, caller, scroll):
+        """ """
+        if int(scroll.direction) == 0:
+            self.map.zoomIn()
+            caller.callRedraw(self)
+
+        else:
+            self.map.zoomOut()
+            caller.callRedraw(self)
+
 
 
 class MapView(Gtk.DrawingArea):
@@ -30,15 +112,29 @@ class MapView(Gtk.DrawingArea):
         self.add_events(Gdk.EventMask.BUTTON_PRESS_MASK)
         self.add_events(Gdk.EventMask.BUTTON_RELEASE_MASK)
         self.add_events(Gdk.EventMask.BUTTON1_MOTION_MASK)
+        self.add_events(Gdk.EventMask.BUTTON2_MOTION_MASK)
+        self.add_events(Gdk.EventMask.BUTTON3_MOTION_MASK)
         self.add_events(Gdk.EventMask.SCROLL_MASK)
 
 
         ## Create MapEngine Object
         self.map = MapEngine.MapEngine()
 
+        ## Create ToolController Object
+        self.tools = ToolController(self.map)
+
         ## Connect Stuff
+
+        self.connect("configure_event", self.hello)
+        self.connect("scroll-event", self.tools.scroll)
+        self.connect("button-press-event", self.tools.buttonPress)
+        self.connect("button-release-event", self.tools.buttonRelease)
+        self.connect("motion-notify-event", self.tools.mouseDrag)
+
         self.connect("draw", self.draw)
 
+    def hello(self, *args):
+        None
 
     def callRedraw(self, caller):
         """ Causes canvas to redraw self """
