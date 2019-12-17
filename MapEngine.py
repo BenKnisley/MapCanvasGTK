@@ -18,7 +18,9 @@ import dataLoader
 
 
 
-
+"""
+These functions will get moved into the MapLayer Object soon enough.
+"""
 def drawPoint(cr, point):
     """ """
     cr.arc(point[0], point[1], 1, 0, 6.2830)
@@ -52,8 +54,12 @@ class MapEngine:
         self._WGS84 = pyproj.Proj("EPSG:4326")
 
         ## Variable projection
-        self._proj = pyproj.Proj("EPSG:4326")
-        #self._proj = pyproj.Proj("+proj=eqc +lat_ts=0 +lat_0=0 +lon_0=0 +x_0=0 +y_0=0 +a=6371000 +b=6371000 +units=m +no_defs")
+        #self._proj = pyproj.Proj("EPSG:4326", preserve_units=True)
+        self._proj = pyproj.Proj("+proj=longlat +a=6378140 +b=6356750 +no_defs")
+        #self._proj = pyproj.Proj("EPSG:32023")
+        #self._proj = pyproj.Proj("+proj=sinu +lon_0=0 +x_0=0 +y_0=0 +a=6378140 +b=6356750 +units=m +no_defs")
+        #self._proj = pyproj.Proj("+proj=aeqd +lat_0=90 +lon_0=0 +x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs")
+        #self._proj = pyproj.Proj("+proj=aeqd +lat_0=40 +lon_0=-83 +x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs")
 
         ## Set default scale
         self._scale = 5.0 ## Default to 1.0
@@ -71,7 +77,7 @@ class MapEngine:
         #self.points = [(40.205833, -83.613889), (39.305833, -83.713889), (39.405833, -83.613889)]
 
         ## To be exported to MapLayer in future
-        self.type, features = dataLoader.getLineFeatures()
+        self.type, features = dataLoader.getLineFeatures1()
 
         self.features = []
         for geoLine in features:
@@ -129,13 +135,14 @@ class MapEngine:
         """
         """
         if isinstance(geoPoint, list):
-            lat = [coord[0] for coord in geoPoint]
-            lon = [coord[1] for coord in geoPoint]
+            #!!! switched 1, and 0
+            lat = [coord[1] for coord in geoPoint]
+            lon = [coord[0] for coord in geoPoint]
             x, y = pyproj.transform(self._WGS84, self._proj, lat, lon)
             #x,y = y,x
             projPoint = list( zip(x,y) )
         else:
-            lat, lon = geoPoint
+            lon, lat = geoPoint
             x, y = pyproj.transform(self._WGS84, self._proj, lat, lon)
             #x,y = y,x
             projPoint = (x, y)
