@@ -17,6 +17,13 @@ import numpy as np
 import dataLoader
 
 
+
+def drawPoint(cr, pixPoint):
+    cr.arc(pixPoint[0], pixPoint[1], 1, 0, 6.2830)
+    cr.fill()
+
+
+
 class MapEngine:
     """
     """
@@ -31,22 +38,16 @@ class MapEngine:
         ## Set default scale
         self._scale = 5.0 ## Default to 1.0
 
-
-
         #! Figure this shit out
         self._coord = (-83.0, 40.0) ## rep for
         self._POI = self.geo2proj(self._coord) ## rep for projection
-        print(self._POI)
 
         ## Set default size
         self._size = (500,500) ## Default to 500px x 500px
 
-        ## Test data points
-        #self.points = [(40.0, -82.0)]
-        #self.points = [(0.0, 0.0), (0.1,0.1), (-0.2,0.2), (0.8,-0.5)]
-        #self.points = [(40.205833, -83.613889), (39.305833, -83.713889), (39.405833, -83.613889)]
-        self.points = dataLoader.getData()
-        self.points = [(-83.0, 40.0)] + self.points
+
+
+
 
     def getProjection(self):
         return self._proj
@@ -160,7 +161,6 @@ class MapEngine:
         ##
         return projPoint
 
-
     def geo2pix(self, geoPoint):
         """ """
         projPoint = self.geo2proj(geoPoint)
@@ -172,6 +172,8 @@ class MapEngine:
         projPoint = self.pix2proj(pixPoint)
         geoPoint = self.proj2geo(projPoint)
         return geoPoint
+
+
 
     def drawMapOnCanvas(self, cr):
         """
@@ -188,8 +190,4 @@ class MapEngine:
         points = self.geo2pix(self.points)
 
         for p in points:
-            ## Draw small circle in center of screen
-            cr.arc(p[0], p[1], 1, 0, 6.2830)
-            #print cr.clip_extents()
-            ## Fill circle
-            cr.fill()
+            drawPoint(cr, p)
