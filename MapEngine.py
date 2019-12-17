@@ -18,9 +18,29 @@ import dataLoader
 
 
 
-def drawPoint(cr, pixPoint):
-    cr.arc(pixPoint[0], pixPoint[1], 1, 0, 6.2830)
+
+def drawPoint(cr, point):
+    """ """
+    cr.arc(point[0], point[1], 1, 0, 6.2830)
     cr.fill()
+
+def drawLine(cr, line):
+    """ """
+    cr.set_source_rgb(0, 0, 1)
+    cr.set_line_width(1)
+
+    initPnt = line[0]
+    cr.move_to( initPnt[0], initPnt[1] )
+
+    for point in line:
+        cr.line_to( point[0], point[1] )
+
+    cr.stroke()
+
+
+def drawPolygon(cr, polygon):
+    """ """
+    None
 
 
 
@@ -44,6 +64,24 @@ class MapEngine:
 
         ## Set default size
         self._size = (500,500) ## Default to 500px x 500px
+
+        ## Test data points
+        #self.points = [(40.0, -82.0)]
+        #self.points = [(0.0, 0.0), (0.1,0.1), (-0.2,0.2), (0.8,-0.5)]
+        #self.points = [(40.205833, -83.613889), (39.305833, -83.713889), (39.405833, -83.613889)]
+
+        ## To be exported to MapLayer in future
+        self.type, features = dataLoader.getLineFeatures()
+
+        self.features = []
+        for geoLine in features:
+            projLine = self.geo2proj(geoLine)
+            self.features.append(projLine)
+
+
+
+        #self.points = dataLoader.getData()
+        #self.points = [(-83.0, 40.0)] + self.points
 
 
 
@@ -180,6 +218,7 @@ class MapEngine:
         Implements draw slot
         - Draw a test circle in middle of widget
         """
+        """
         ## Draw background
         cr.set_source_rgb(0.05, 0.05, 0.05) ## Set color to 95% black
         cr.rectangle( 0,0, self._size[0], self._size[1] ) ## Draw rectangle over entire widget
@@ -191,3 +230,15 @@ class MapEngine:
 
         for p in points:
             drawPoint(cr, p)
+        """
+
+        ## Draw background
+        cr.set_source_rgb(0.05, 0.05, 0.05) ## Set color to 95% black
+        cr.rectangle( 0,0, self._size[0], self._size[1] ) ## Draw rectangle over entire widget
+        cr.fill() ## Fill rectangle
+
+        if self.type == "line":
+
+            for projLine in self.features:
+                pixLine = self.proj2pix(projLine)
+                drawLine(cr, pixLine)
