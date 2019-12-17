@@ -55,7 +55,8 @@ class MapEngine:
 
         ## Variable projection
         #self._proj = pyproj.Proj("EPSG:4326", preserve_units=True)
-        self._proj = pyproj.Proj("+proj=longlat +a=6378140 +b=6356750 +no_defs")
+        #self._proj = pyproj.Proj("+proj=longlat +a=6378140 +b=6356750 +no_defs")
+        self._proj = pyproj.Proj("+proj=longlat")
         #self._proj = pyproj.Proj("EPSG:32023")
         #self._proj = pyproj.Proj("+proj=sinu +lon_0=0 +x_0=0 +y_0=0 +a=6378140 +b=6356750 +units=m +no_defs")
         #self._proj = pyproj.Proj("+proj=aeqd +lat_0=90 +lon_0=0 +x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs")
