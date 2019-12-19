@@ -145,4 +145,4 @@ class MapView(Gtk.DrawingArea):
         """ """
         ## Call on map engine to draw map on canvas
         self.map.setSize((self.get_allocated_width(), self.get_allocated_height()))
-        self.map.drawMapOnCanvas(cr)
+        self.map.paintCanvas(cr)

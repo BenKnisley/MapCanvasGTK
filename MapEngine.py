@@ -23,6 +23,7 @@ These functions will get moved into the MapLayer Object soon enough.
 """
 def drawPoint(cr, point):
     """ """
+    cr.set_source_rgb(0, 1, 0)
     cr.arc(point[0], point[1], 1, 0, 6.2830)
     cr.fill()
 
@@ -39,10 +40,56 @@ def drawLine(cr, line):
 
     cr.stroke()
 
-
 def drawPolygon(cr, polygon):
     """ """
     None
+
+
+
+class MapLayer:
+    def __init__(self, mapEng, geotype, inputdata):
+
+        ##
+        self.mapEng = mapEng
+        self.geotype = geotype
+        self.rawdata = inputdata
+
+        self.features = []
+        self.projectData()
+
+
+
+    def projectData(self):
+        self.features = [] ## Clear existing features
+        if self.geotype == 'point':
+            self.features = self.mapEng.geo2proj( self.rawdata )
+
+        elif self.geotype == 'line':
+            for line in self.rawdata:
+                self.features.append( self.mapEng.geo2proj(line) )
+
+        else:# self.geotype == polygon:
+            None
+
+    def draw(self, cr):
+        if self.geotype == 'point':
+            pixPoints = self.mapEng.proj2pix(self.features)
+            for point in pixPoints:
+                drawPoint(cr, point)
+
+        elif self.geotype == 'line':
+            for projLine in self.features:
+                pixLine = self.mapEng.proj2pix(projLine)
+                drawLine(cr, pixLine)
+
+        else: # self.geotype == polygon:
+            None
+
+
+
+
+
+
 
 
 
@@ -54,13 +101,8 @@ class MapEngine:
         self._WGS84 = pyproj.Proj("EPSG:4326")
 
         ## Variable projection
-        #self._proj = pyproj.Proj("EPSG:4326", preserve_units=True)
-        #self._proj = pyproj.Proj("+proj=longlat +a=6378140 +b=6356750 +no_defs")
         self._proj = pyproj.Proj("+proj=longlat")
-        #self._proj = pyproj.Proj("EPSG:32023")
-        #self._proj = pyproj.Proj("+proj=sinu +lon_0=0 +x_0=0 +y_0=0 +a=6378140 +b=6356750 +units=m +no_defs")
-        #self._proj = pyproj.Proj("+proj=aeqd +lat_0=90 +lon_0=0 +x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs")
-        #self._proj = pyproj.Proj("+proj=aeqd +lat_0=40 +lon_0=-83 +x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs")
+
 
         ## Set default scale
         self._scale = 5.0 ## Default to 1.0
@@ -72,19 +114,11 @@ class MapEngine:
         ## Set default size
         self._size = (500,500) ## Default to 500px x 500px
 
-        ## Test data points
-        #self.points = [(40.0, -82.0)]
-        #self.points = [(0.0, 0.0), (0.1,0.1), (-0.2,0.2), (0.8,-0.5)]
-        #self.points = [(40.205833, -83.613889), (39.305833, -83.713889), (39.405833, -83.613889)]
 
-        ## To be exported to MapLayer in future
-        self.type, features = dataLoader.getLineFeatures1()
-
-        self.features = []
-        for geoLine in features:
-            projLine = self.geo2proj(geoLine)
-            self.features.append(projLine)
-
+        ## Load layers
+        self.layers = []
+        self.layers.append( MapLayer(self, 'line', dataLoader.getLineFeatures1()) )
+        self.layers.append( MapLayer(self, 'point', dataLoader.getPointFeatures()) )
 
 
         #self.points = dataLoader.getData()
@@ -221,32 +255,17 @@ class MapEngine:
 
 
 
-    def drawMapOnCanvas(self, cr):
+    def paintCanvas(self, cr):
         """
         Implements draw slot
         - Draw a test circle in middle of widget
         """
-        """
-        ## Draw background
-        cr.set_source_rgb(0.05, 0.05, 0.05) ## Set color to 95% black
-        cr.rectangle( 0,0, self._size[0], self._size[1] ) ## Draw rectangle over entire widget
-        cr.fill() ## Fill rectangle
-
-        cr.set_source_rgb(1, 0, 0)  ## Set color to red
-
-        points = self.geo2pix(self.points)
-
-        for p in points:
-            drawPoint(cr, p)
-        """
 
         ## Draw background
         cr.set_source_rgb(0.05, 0.05, 0.05) ## Set color to 95% black
         cr.rectangle( 0,0, self._size[0], self._size[1] ) ## Draw rectangle over entire widget
         cr.fill() ## Fill rectangle
 
-        if self.type == "line":
 
-            for projLine in self.features:
-                pixLine = self.proj2pix(projLine)
-                drawLine(cr, pixLine)
+        for layer in self.layers:
+            layer.draw(cr)
