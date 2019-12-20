@@ -94,10 +94,12 @@ class ToolController(GObject.GObject):
         """ """
         if int(scroll.direction) == 0:
             self.map.zoomIn()
+            print( self.map.getScale() )
             caller.callRedraw(self)
 
         else:
             self.map.zoomOut()
+            print( self.map.getScale() )
             caller.callRedraw(self)
 
 

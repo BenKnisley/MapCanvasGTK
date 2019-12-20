@@ -29,7 +29,7 @@ def drawPoint(cr, point):
 
 def drawLine(cr, line):
     """ """
-    cr.set_source_rgb(0, 0, 1)
+    cr.set_source_rgb(1, 1, 1)
     cr.set_line_width(1)
 
     initPnt = line[0]
@@ -38,11 +38,34 @@ def drawLine(cr, line):
     for point in line:
         cr.line_to( point[0], point[1] )
 
+    cr.set_source_rgb(1, 0, 0)
     cr.stroke()
+
 
 def drawPolygon(cr, polygon):
     """ """
-    None
+    cr.set_source_rgb(1, 0, 0)
+
+    for subpoly in polygon:
+        initPnt = subpoly[0]
+        cr.move_to( initPnt[0], initPnt[1] )
+
+        for point in subpoly:
+            cr.line_to( point[0], point[1] )
+    cr.fill()
+
+    ## Draw line outline
+    cr.set_source_rgb(0, 0, 0)
+    cr.set_line_width(1)
+
+    for subpoly in polygon:
+        initPnt = subpoly[0]
+        cr.move_to( initPnt[0], initPnt[1] )
+
+        for point in subpoly:
+            cr.line_to( point[0], point[1] )
+        cr.stroke()
+
 
 
 
@@ -69,7 +92,11 @@ class MapLayer:
                 self.features.append( self.mapEng.geo2proj(line) )
 
         else:# self.geotype == polygon:
-            None
+            for polygon in self.rawdata:
+                projPoly = []
+                for subpoly in polygon:
+                    projPoly.append( self.mapEng.geo2proj(subpoly) )
+                self.features.append(projPoly)
 
     def draw(self, cr):
         if self.geotype == 'point':
@@ -83,7 +110,13 @@ class MapLayer:
                 drawLine(cr, pixLine)
 
         else: # self.geotype == polygon:
-            None
+            pixPoly = []
+            for projFeature in self.features:
+                for subPoly in projFeature:
+                    pixsubPoly = self.mapEng.proj2pix(subPoly)
+                    pixPoly.append(pixsubPoly)
+
+            drawPolygon(cr, pixPoly)
 
 
 
@@ -101,11 +134,12 @@ class MapEngine:
         self._WGS84 = pyproj.Proj("EPSG:4326")
 
         ## Variable projection
-        self._proj = pyproj.Proj("+proj=longlat")
-
+        #self._proj = pyproj.Proj("+proj=longlat")
+        #self._proj = pyproj.Proj("EPSG:32023")
+        self._proj = pyproj.Proj("+proj=aeqd +lat_0=40 +lon_0=-83 +x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs")
 
         ## Set default scale
-        self._scale = 5.0 ## Default to 1.0
+        self._scale = 5000.0 ## Default to 1.0
 
         #! Figure this shit out
         self._coord = (-83.0, 40.0) ## rep for
@@ -118,6 +152,7 @@ class MapEngine:
         ## Load layers
         self.layers = []
         self.layers.append( MapLayer(self, 'line', dataLoader.getLineFeatures1()) )
+        self.layers.append( MapLayer(self, 'polygon', dataLoader.getPolyFeatures()) )
         self.layers.append( MapLayer(self, 'point', dataLoader.getPointFeatures()) )
 
 
@@ -207,8 +242,8 @@ class MapEngine:
             y = np.array(y)
 
             ## Do math logic on all points
-            pixelX = ((x - focusX) * self._scale) + centerX
-            pixelY = -((y - focusY) * self._scale) + centerY
+            pixelX = ((x - focusX) / self._scale) + centerX
+            pixelY = -((y - focusY) / self._scale) + centerY
 
             #pixelX, pixelY = pixelY, pixelX
 
@@ -231,8 +266,8 @@ class MapEngine:
         pixX, pixY = pixPoint
 
         ##
-        projX = ((pixX - centerX) / self._scale) + focusX
-        projY = ((pixY - centerY) / self._scale) + focusY
+        projX = ((pixX - centerX) * self._scale) + focusX
+        projY = ((pixY - centerY) * self._scale) + focusY
 
         ##
         projPoint = (projX, projY)
