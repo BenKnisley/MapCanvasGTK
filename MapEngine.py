@@ -67,6 +67,17 @@ def drawPolygon(cr, polygon):
         cr.stroke()
 
 
+class mapStyle:
+    def __init__(self):
+        self.pointcolor = (0,0,1)
+        self.pointradius = 1
+
+        self.linecolor = (0,1,0)
+        self.linewidth = 1
+
+        self.polyColor = (1,0,0)
+        self.polyLineColor = (0,0,0)
+        self.polyLineWidth = 2
 
 
 class MapLayer:
@@ -134,9 +145,9 @@ class MapEngine:
         self._WGS84 = pyproj.Proj("EPSG:4326")
 
         ## Variable projection
-        #self._proj = pyproj.Proj("+proj=longlat")
+        self._proj = pyproj.Proj("+proj=longlat")
         #self._proj = pyproj.Proj("EPSG:32023")
-        self._proj = pyproj.Proj("+proj=aeqd +lat_0=40 +lon_0=-83 +x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs")
+        #self._proj = pyproj.Proj("+proj=aeqd +lat_0=40 +lon_0=-83 +x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs")
 
         ## Set default scale
         self._scale = 5000.0 ## Default to 1.0
@@ -177,10 +188,10 @@ class MapEngine:
         return self._POI
 
     def zoomIn(self):
-        self._scale += (self._scale * 0.1)
+        self._scale -= (self._scale * 0.1)
 
     def zoomOut(self):
-        self._scale -= (self._scale * 0.1)
+        self._scale += (self._scale * 0.1)
 
     def setScale(self, newScale):
         self._scale = newScale
