@@ -15,53 +15,47 @@ from gi.repository import Gtk, Gdk, Gio, GObject
 from MapView import MapView
 
 
-class MyApplication(Gtk.Application):
-    """ """
+class MapViewerApplication(Gtk.Application):
+    """ The root GTK object for the application. Opens MainWindow. """
+
     def __init__(self):
-        ## Initialize Gtk Application parent, set ID and flags
-        Gtk.Application.__init__(
-            self,
-            application_id="apps.test.GeoCanvasWindow",
-            flags=Gio.ApplicationFlags.FLAGS_NONE
-        )
+        """ Opens MainWindow and connects signals & slots. """
+        ## Set ID and flags, initialize Gtk Application parent.
+        app_id="apps.test.MapViewer"
+        flags=Gio.ApplicationFlags.FLAGS_NONE
+        Gtk.Application.__init__(self, application_id=app_id, flags=flags)
+
+        ## Initialize self object.
+        self.window = MainWindow()
 
         ## Connect self activate signal, with self on_activate slot
-        self.connect("activate", self.on_activate)
+        self.connect("activate", self._on_activate)
+
+    def _on_activate(self, caller):
+        self.window.show_all()
+        self.add_window(self.window)
 
 
-    def on_activate(self, data=None):
-        ## Initialize window as mainWindow object
-        window = mainWindow()
+class MainWindow(Gtk.Window):
+    """ The main application window, hosts the MapView widget """
 
-        ## Make all widgets on mainWindow visible
-        window.show_all()
-
-        ## Add window to self application
-        self.add_window(window)
-
-
-
-class mainWindow(Gtk.Window):
     def __init__(self):
+        """ Defines window properties, & adds child widgets. """
         ## Initialize parents: Gtk.Window & Gtk.GObject
         Gtk.Window.__init__(self)
         GObject.GObject.__init__(self)
 
-        ## Set self window properties
+        ## Set own window properties
         self.resize(1200, 800)
         self.set_title("Map Viewer")
-        #self.set_border_width(10)
+        self.set_border_width(3)
 
         ## Create widgets
         self.map = MapView()
 
-
-
-        ## Create, pack, and add layout to window
+        ## Create layout, add MapView, and add layout to window
         self.layout = Gtk.VBox()
-
         self.layout.pack_start(self.map, True, True, 0)
-
         self.add(self.layout)
 
 
@@ -69,5 +63,5 @@ class mainWindow(Gtk.Window):
 ## Main function. Run application, if not imported.
 if __name__ == "__main__":
     ## Create app instance and run it
-    app = MyApplication()
+    app = MapViewerApplication()
     app.run()

@@ -6,25 +6,26 @@ Author: Ben Knisley [benknisley@gmail.com]
 Date: 8 December, 2019
 Function: A Gtk Widget that provides a map.
 """
+
 ## Import PyGtk Modules
 import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, Gdk, Gio, GObject
-
-import time
 
 ## Import MapEngine
 import MapEngine
 
 
 class ToolController(GObject.GObject):
+    """ """
     def __init__(self, map):
+        """ """
         GObject.GObject.__init__(self)
 
         self.map = map
 
 
-        ## Define mouse button trackers
+        ## Define public mouse button trackers
         self.leftHeld = False
         self.LDragPOS = (None, None)
 
@@ -33,7 +34,6 @@ class ToolController(GObject.GObject):
 
         self.rightHeld = False
         self.RDragPOS = (None, None)
-
 
     def buttonPress(self, caller, click):
         if click.button == 1: ## Left click
@@ -48,7 +48,6 @@ class ToolController(GObject.GObject):
             self.rightHeld = True
             self.RDragPOS = (click.x, click.y)
 
-
     def buttonRelease(self, caller, click):
         if click.button == 1: ## Left click
             self.leftHeld = False
@@ -60,11 +59,9 @@ class ToolController(GObject.GObject):
             self.rightHeld = False
             self.RDragPOS = (None, None)
 
-
     def mouseDrag(self, caller, move):
         if self.leftHeld:
             print("Left Drag")
-
 
         if self.midHeld:
             ## Unpack Points
@@ -84,7 +81,6 @@ class ToolController(GObject.GObject):
             ## Call redraw
             caller.callRedraw(self)
 
-
         if self.rightHeld:
             #print("Right Drag")
             None
@@ -103,9 +99,12 @@ class ToolController(GObject.GObject):
             caller.callRedraw(self)
 
 
-
 class MapView(Gtk.DrawingArea):
+    """ """
+
     def __init__(self):
+        """ """
+
         ## Implement inheritance from Gtk.Window & Gtk.GObject
         Gtk.DrawingArea.__init__(self)
         GObject.GObject.__init__(self)

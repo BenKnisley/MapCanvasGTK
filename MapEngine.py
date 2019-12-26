@@ -21,16 +21,22 @@ import dataLoader
 """
 These functions will get moved into the MapLayer Object soon enough.
 """
-def drawPoint(cr, point):
+def drawPoint(cr, point, style):
     """ """
-    cr.set_source_rgb(0, 1, 0)
-    cr.arc(point[0], point[1], 1, 0, 6.2830)
+    R, G, B = style.pointcolor
+    rad = style.pointradius
+
+    cr.set_source_rgb(R, G, B)
+    cr.arc(point[0], point[1], rad, 0, 6.2830)
     cr.fill()
 
-def drawLine(cr, line):
+def drawLine(cr, line, style):
     """ """
-    cr.set_source_rgb(1, 1, 1)
-    cr.set_line_width(1)
+    R, G, B = style.linecolor
+    W = style.linewidth
+
+    cr.set_source_rgb(R, G, B)
+    cr.set_line_width(W)
 
     initPnt = line[0]
     cr.move_to( initPnt[0], initPnt[1] )
@@ -38,13 +44,12 @@ def drawLine(cr, line):
     for point in line:
         cr.line_to( point[0], point[1] )
 
-    cr.set_source_rgb(1, 0, 0)
     cr.stroke()
 
-
-def drawPolygon(cr, polygon):
+def drawPolygon(cr, polygon, style):
     """ """
-    cr.set_source_rgb(1, 0, 0)
+    R, G, B = style.polyColor
+    cr.set_source_rgb(R, G, B)
 
     for subpoly in polygon:
         initPnt = subpoly[0]
@@ -54,9 +59,13 @@ def drawPolygon(cr, polygon):
             cr.line_to( point[0], point[1] )
     cr.fill()
 
+
+    R, G, B = style.polyLineColor
+    W = style.polyLineWidth
+
     ## Draw line outline
-    cr.set_source_rgb(0, 0, 0)
-    cr.set_line_width(1)
+    cr.set_source_rgb(R, G, B)
+    cr.set_line_width(W)
 
     for subpoly in polygon:
         initPnt = subpoly[0]
@@ -69,15 +78,15 @@ def drawPolygon(cr, polygon):
 
 class mapStyle:
     def __init__(self):
-        self.pointcolor = (0,0,1)
-        self.pointradius = 1
+        self.pointcolor = (0.61, 0.13, 0.15)
+        self.pointradius = 2
 
-        self.linecolor = (0,1,0)
+        self.linecolor = (0,0,1)
         self.linewidth = 1
 
-        self.polyColor = (1,0,0)
-        self.polyLineColor = (0,0,0)
-        self.polyLineWidth = 2
+        self.polyColor = (0.31, 0.34, 0.68)
+        self.polyLineColor = (1.0, 1.0, 1.0)
+        self.polyLineWidth = 0.25
 
 
 class MapLayer:
@@ -89,7 +98,12 @@ class MapLayer:
         self.rawdata = inputdata
 
         self.features = []
+        self.styles = []
+
         self.projectData()
+
+        x = mapStyle()
+        self.setStyle(x)
 
 
 
@@ -109,32 +123,38 @@ class MapLayer:
                     projPoly.append( self.mapEng.geo2proj(subpoly) )
                 self.features.append(projPoly)
 
+
+    def setStyle(self, style):
+        for _ in self.features:
+
+            if len(self.styles) % 2 == 0:
+                x = mapStyle()
+                x.polyColor = (1,1,0)
+                self.styles.append(x)
+            else:
+                self.styles.append(style)
+
+
+
     def draw(self, cr):
         if self.geotype == 'point':
             pixPoints = self.mapEng.proj2pix(self.features)
-            for point in pixPoints:
-                drawPoint(cr, point)
+            for point, style in zip(pixPoints, self.styles):
+                drawPoint(cr, point, style)
 
         elif self.geotype == 'line':
-            for projLine in self.features:
+            for projLine, style in zip(self.features, self.styles):
                 pixLine = self.mapEng.proj2pix(projLine)
-                drawLine(cr, pixLine)
+                drawLine(cr, pixLine, style)
 
         else: # self.geotype == polygon:
-            pixPoly = []
-            for projFeature in self.features:
+            for projFeature, style in zip(self.features, self.styles):
+                pixPoly = []
                 for subPoly in projFeature:
                     pixsubPoly = self.mapEng.proj2pix(subPoly)
                     pixPoly.append(pixsubPoly)
 
-            drawPolygon(cr, pixPoly)
-
-
-
-
-
-
-
+                drawPolygon(cr, pixPoly, style)
 
 
 class MapEngine:
@@ -150,7 +170,9 @@ class MapEngine:
         #self._proj = pyproj.Proj("+proj=aeqd +lat_0=40 +lon_0=-83 +x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs")
 
         ## Set default scale
-        self._scale = 5000.0 ## Default to 1.0
+        #self._scale = 5000.0 ## Default to 1.0
+        self._scale = 0.01 ## Default to 1.0
+
 
         #! Figure this shit out
         self._coord = (-83.0, 40.0) ## rep for
@@ -162,7 +184,8 @@ class MapEngine:
 
         ## Load layers
         self.layers = []
-        self.layers.append( MapLayer(self, 'line', dataLoader.getLineFeatures1()) )
+
+        #self.layers.append( MapLayer(self, 'line', dataLoader.getLineFeatures1()) )
         self.layers.append( MapLayer(self, 'polygon', dataLoader.getPolyFeatures()) )
         self.layers.append( MapLayer(self, 'point', dataLoader.getPointFeatures()) )
 
@@ -215,6 +238,11 @@ class MapEngine:
     def geo2proj(self, geoPoint): ## geoPoint tuple (lat, lon)
         """
         """
+
+        if self._WGS84 == self._proj:
+            return geoPoint
+
+
         if isinstance(geoPoint, list):
             #!!! switched 1, and 0
             lat = [coord[1] for coord in geoPoint]
