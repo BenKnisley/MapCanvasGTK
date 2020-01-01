@@ -15,6 +15,11 @@ from gi.repository import Gtk, Gdk, Gio, GObject
 ## Import MapEngine
 import MapEngine
 
+import MapLayer
+
+#! Load temp fake data loader
+import dataLoader
+
 
 class ToolController(GObject.GObject):
     """ """
@@ -101,10 +106,8 @@ class ToolController(GObject.GObject):
 
 class MapView(Gtk.DrawingArea):
     """ """
-
     def __init__(self):
         """ """
-
         ## Implement inheritance from Gtk.Window & Gtk.GObject
         Gtk.DrawingArea.__init__(self)
         GObject.GObject.__init__(self)
@@ -119,7 +122,13 @@ class MapView(Gtk.DrawingArea):
 
 
         ## Create MapEngine Object
-        self.map = MapEngine.MapEngine()
+        self.map = MapEngine.MapEngine("EPSG:4326", (-83.0, 40.0))
+
+        #self. MapLayer(self, 'line', dataLoader.getLineFeatures1()) )
+        self.map.addLayer( MapLayer.MapLayer(self.map, 'polygon', dataLoader.getPolyFeatures()) )
+        self.map.addLayer( MapLayer.MapLayer(self.map, 'point', dataLoader.getPointFeatures()) )
+
+
 
         ## Create ToolController Object
         self.tools = ToolController(self.map)

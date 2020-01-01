@@ -1,201 +1,44 @@
 #!/usr/bin/env python3
 """
-Project: MapViewer
-Title: MapView Widget
+Project: Map Engine
+Title: MapEngine
 Author: Ben Knisley [benknisley@gmail.com]
 Date: 8 December, 2019
-Function: A Gtk Widget that provides a map.
+Function:
 """
-## Import PyGtk Modules
-import gi
-gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk, Gdk, Gio, GObject
-
-## Import PyProj
+## Import PyProj, and numpy
 import pyproj
 import numpy as np
-import dataLoader
 
-
-
-"""
-These functions will get moved into the MapLayer Object soon enough.
-"""
-def drawPoint(cr, point, style):
-    """ """
-    R, G, B = style.pointcolor
-    rad = style.pointradius
-
-    cr.set_source_rgb(R, G, B)
-    cr.arc(point[0], point[1], rad, 0, 6.2830)
-    cr.fill()
-
-def drawLine(cr, line, style):
-    """ """
-    R, G, B = style.linecolor
-    W = style.linewidth
-
-    cr.set_source_rgb(R, G, B)
-    cr.set_line_width(W)
-
-    initPnt = line[0]
-    cr.move_to( initPnt[0], initPnt[1] )
-
-    for point in line:
-        cr.line_to( point[0], point[1] )
-
-    cr.stroke()
-
-def drawPolygon(cr, polygon, style):
-    """ """
-    R, G, B = style.polyColor
-    cr.set_source_rgb(R, G, B)
-
-    for subpoly in polygon:
-        initPnt = subpoly[0]
-        cr.move_to( initPnt[0], initPnt[1] )
-
-        for point in subpoly:
-            cr.line_to( point[0], point[1] )
-    cr.fill()
-
-
-    R, G, B = style.polyLineColor
-    W = style.polyLineWidth
-
-    ## Draw line outline
-    cr.set_source_rgb(R, G, B)
-    cr.set_line_width(W)
-
-    for subpoly in polygon:
-        initPnt = subpoly[0]
-        cr.move_to( initPnt[0], initPnt[1] )
-
-        for point in subpoly:
-            cr.line_to( point[0], point[1] )
-        cr.stroke()
-
-
-class mapStyle:
-    def __init__(self):
-        self.pointcolor = (0.61, 0.13, 0.15)
-        self.pointradius = 2
-
-        self.linecolor = (0,0,1)
-        self.linewidth = 1
-
-        self.polyColor = (0.31, 0.34, 0.68)
-        self.polyLineColor = (1.0, 1.0, 1.0)
-        self.polyLineWidth = 0.25
-
-
-class MapLayer:
-    def __init__(self, mapEng, geotype, inputdata):
-
-        ##
-        self.mapEng = mapEng
-        self.geotype = geotype
-        self.rawdata = inputdata
-
-        self.features = []
-        self.styles = []
-
-        self.projectData()
-
-        x = mapStyle()
-        self.setStyle(x)
-
-
-
-    def projectData(self):
-        self.features = [] ## Clear existing features
-        if self.geotype == 'point':
-            self.features = self.mapEng.geo2proj( self.rawdata )
-
-        elif self.geotype == 'line':
-            for line in self.rawdata:
-                self.features.append( self.mapEng.geo2proj(line) )
-
-        else:# self.geotype == polygon:
-            for polygon in self.rawdata:
-                projPoly = []
-                for subpoly in polygon:
-                    projPoly.append( self.mapEng.geo2proj(subpoly) )
-                self.features.append(projPoly)
-
-
-    def setStyle(self, style):
-        for _ in self.features:
-
-            if len(self.styles) % 2 == 0:
-                x = mapStyle()
-                x.polyColor = (1,1,0)
-                self.styles.append(x)
-            else:
-                self.styles.append(style)
-
-
-
-    def draw(self, cr):
-        if self.geotype == 'point':
-            pixPoints = self.mapEng.proj2pix(self.features)
-            for point, style in zip(pixPoints, self.styles):
-                drawPoint(cr, point, style)
-
-        elif self.geotype == 'line':
-            for projLine, style in zip(self.features, self.styles):
-                pixLine = self.mapEng.proj2pix(projLine)
-                drawLine(cr, pixLine, style)
-
-        else: # self.geotype == polygon:
-            for projFeature, style in zip(self.features, self.styles):
-                pixPoly = []
-                for subPoly in projFeature:
-                    pixsubPoly = self.mapEng.proj2pix(subPoly)
-                    pixPoly.append(pixsubPoly)
-
-                drawPolygon(cr, pixPoly, style)
+## Import MapLayer and style
+from MapLayer import MapLayer, mapStyle
 
 
 class MapEngine:
     """
     """
-    def __init__(self):
-        ## Keep a ref WGS84
+    def __init__(self, projection, initCoord):
+        """ """
+        ## Keep a reference WGS84
         self._WGS84 = pyproj.Proj("EPSG:4326")
 
         ## Variable projection
-        self._proj = pyproj.Proj("+proj=longlat")
-        #self._proj = pyproj.Proj("EPSG:32023")
-        #self._proj = pyproj.Proj("+proj=aeqd +lat_0=40 +lon_0=-83 +x_0=0 +y_0=0 +datum=WGS84 +units=m +no_defs")
-
-        ## Set default scale
-        #self._scale = 5000.0 ## Default to 1.0
-        self._scale = 0.01 ## Default to 1.0
-
-
-        #! Figure this shit out
-        self._coord = (-83.0, 40.0) ## rep for
-        self._POI = self.geo2proj(self._coord) ## rep for projection
+        self._proj = pyproj.Proj(projection)
+        self._scale = 0.01
+        self._POI = self.geo2proj(initCoord)
 
         ## Set default size
-        self._size = (500,500) ## Default to 500px x 500px
+        self._size = (500, 500) ## Default to 500px x 500px
 
-
-        ## Load layers
-        self.layers = []
-
-        #self.layers.append( MapLayer(self, 'line', dataLoader.getLineFeatures1()) )
-        self.layers.append( MapLayer(self, 'polygon', dataLoader.getPolyFeatures()) )
-        self.layers.append( MapLayer(self, 'point', dataLoader.getPointFeatures()) )
-
-
-        #self.points = dataLoader.getData()
-        #self.points = [(-83.0, 40.0)] + self.points
+        ## Create list to hold layers
+        self._layer_list = []
 
 
 
-
+    def addLayer(self, new_map_layer):
+        """
+        """
+        self._layer_list.append(new_map_layer)
 
     def getProjection(self):
         return self._proj
@@ -233,8 +76,6 @@ class MapEngine:
         y = int(self._size[1]/2)
         return (x, y)
 
-
-
     def geo2proj(self, geoPoint): ## geoPoint tuple (lat, lon)
         """
         """
@@ -252,7 +93,7 @@ class MapEngine:
             projPoint = list( zip(x,y) )
         else:
             lon, lat = geoPoint
-            x, y = pyproj.transform(self._WGS84, self._proj, lat, lon)
+            x, y = pyproj.transform(self._WGS84, self._proj, lat, lon, always_xy=True)
             #x,y = y,x
             projPoint = (x, y)
 
@@ -341,5 +182,5 @@ class MapEngine:
         cr.fill() ## Fill rectangle
 
 
-        for layer in self.layers:
+        for layer in self._layer_list:
             layer.draw(cr)
