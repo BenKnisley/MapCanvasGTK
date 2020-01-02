@@ -11,7 +11,8 @@ import pyproj
 import numpy as np
 
 ## Import MapLayer and style
-from MapLayer import MapLayer, mapStyle
+from VectorLayer import VectorLayer
+import CairoMapPainter
 
 
 class MapEngine:
@@ -30,21 +31,24 @@ class MapEngine:
         ## Set default size
         self._size = (500, 500) ## Default to 500px x 500px
 
+        ## Create MapPainter object
+        self._map_painter = CairoMapPainter.CairoMapPainter()
+
         ## Create list to hold layers
         self._layer_list = []
-
-
 
     def addLayer(self, new_map_layer):
         """
         """
         self._layer_list.append(new_map_layer)
 
+
     def getProjection(self):
         return self._proj
 
     def setProjection(self, newProjection):
         None
+
 
     def setPOI(self, newPOI):
         """ """
@@ -53,11 +57,13 @@ class MapEngine:
     def getPOI(self):
         return self._POI
 
+
     def zoomIn(self):
         self._scale -= (self._scale * 0.1)
 
     def zoomOut(self):
         self._scale += (self._scale * 0.1)
+
 
     def setScale(self, newScale):
         self._scale = newScale
@@ -65,16 +71,19 @@ class MapEngine:
     def getScale(self):
         return self._scale
 
+
     def setSize(self, newSize): # size tuple (x, y)
         self._size = newSize
 
     def getSize(self):
         return self._size
 
+
     def getCenterPoint(self):
         x = int(self._size[0]/2)
         y = int(self._size[1]/2)
         return (x, y)
+
 
     def geo2proj(self, geoPoint): ## geoPoint tuple (lat, lon)
         """
@@ -93,7 +102,7 @@ class MapEngine:
             projPoint = list( zip(x,y) )
         else:
             lon, lat = geoPoint
-            x, y = pyproj.transform(self._WGS84, self._proj, lat, lon, always_xy=True)
+            x, y = pyproj.transform(self._WGS84, self._proj, lat, lon) ## alwaysXy
             #x,y = y,x
             projPoint = (x, y)
 

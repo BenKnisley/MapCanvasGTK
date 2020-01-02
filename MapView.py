@@ -14,8 +14,8 @@ from gi.repository import Gtk, Gdk, Gio, GObject
 
 ## Import MapEngine
 import MapEngine
+import VectorLayer
 
-import MapLayer
 
 #! Load temp fake data loader
 import dataLoader
@@ -57,6 +57,9 @@ class ToolController(GObject.GObject):
         if click.button == 1: ## Left click
             self.leftHeld = False
             self.LDragPOS = (None, None)
+
+            print( self.map.getPOI() )
+
         elif click.button == 2: ## Middle click
             self.midHeld = False
             self.MDragPOS = (None, None)
@@ -95,12 +98,12 @@ class ToolController(GObject.GObject):
         """ """
         if int(scroll.direction) == 0:
             self.map.zoomIn()
-            print( self.map.getScale() )
+            print( self.map.getScale(), "Units per Pixel" )
             caller.callRedraw(self)
 
         else:
             self.map.zoomOut()
-            print( self.map.getScale() )
+            print( self.map.getScale(), "Units per Pixel" )
             caller.callRedraw(self)
 
 
@@ -121,12 +124,23 @@ class MapView(Gtk.DrawingArea):
         self.add_events(Gdk.EventMask.SCROLL_MASK)
 
 
-        ## Create MapEngine Object
+        ## Create MapEngine Object)
+        #self.map = MapEngine.MapEngine("EPSG:3857", (-83.0, 40.0))
         self.map = MapEngine.MapEngine("EPSG:4326", (-83.0, 40.0))
 
-        #self. MapLayer(self, 'line', dataLoader.getLineFeatures1()) )
-        self.map.addLayer( MapLayer.MapLayer(self.map, 'polygon', dataLoader.getPolyFeatures()) )
-        self.map.addLayer( MapLayer.MapLayer(self.map, 'point', dataLoader.getPointFeatures()) )
+
+        ## Create map layers
+        coastlines = VectorLayer.VectorLayer(self.map, 'line', dataLoader.getLineFeatures1())
+        counties = VectorLayer.VectorLayer(self.map, 'polygon', dataLoader.getPolyFeatures())
+        county_centers = VectorLayer.VectorLayer(self.map, 'point', dataLoader.getPointFeatures())
+
+        ## Style Layers
+
+
+        ## Add layers to map
+        self.map.addLayer(coastlines)
+        self.map.addLayer(counties)
+        self.map.addLayer(county_centers)
 
 
 
