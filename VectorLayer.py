@@ -4,6 +4,54 @@ Author: Ben Knisley [benknisley@gmail.com]
 Date: December 31, 2019
 """
 
+## Import OGR
+from osgeo import ogr
+
+
+def layer_from_shapefile(MapEngine_obj, shapefile_path):
+    """
+    """
+    ## Setup driver for shapefile, open shapefile
+    driver = ogr.GetDriverByName('ESRI Shapefile')
+    shapefile = driver.Open(shapefile_path, 0)
+
+    ## Test if file is readable
+    if shapefile == None:
+        #! Throw error if file does exist
+        None
+
+    ## Get the shapefile single layer
+    layer = shapefile.GetLayer()
+
+    ## Determine geometry type of shapefile
+    feature = layer.GetNextFeature()
+    geometry = feature.GetGeometryRef()
+    geotype = geometry.GetGeometryName()
+    layer.ResetReading()
+
+    if geotype == "POINT":
+        geometry_type = 'point'
+    elif geotype == "LINESTRING":
+        geometry_type = 'line'
+    elif geotype == "POLYGON":
+        geometry_type = 'polygon'
+    elif geotype == "LINEARRING":
+        geometry_type = 'polygon'
+    else:
+        #! Throw Error ??
+        None
+
+    if geometry_type == "point":
+
+        point_geometrys = []
+        for feature in layer:
+            geom = feature.GetGeometryRef()
+            for x in geom.GetPoints():
+                point_geometrys.append(x)
+
+        return VectorLayer(MapEngine_obj, geometry_type, point_geometrys) #! Add attributes names, and attributes
+
+
 
 class _FeatureStyle:
     def __init__(self):
@@ -19,6 +67,7 @@ class _FeatureStyle:
 
 
 class VectorLayer:
+    """"""
     def __init__(self, host_map_engine, geotype, inputdata):
 
         ##

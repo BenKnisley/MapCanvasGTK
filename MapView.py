@@ -132,7 +132,10 @@ class MapView(Gtk.DrawingArea):
         ## Create map layers
         coastlines = VectorLayer.VectorLayer(self.map, 'line', dataLoader.getLineFeatures1())
         counties = VectorLayer.VectorLayer(self.map, 'polygon', dataLoader.getPolyFeatures())
-        county_centers = VectorLayer.VectorLayer(self.map, 'point', dataLoader.getPointFeatures())
+        #county_centers = VectorLayer.VectorLayer(self.map, 'point', dataLoader.getPointFeatures())
+
+        ## Test VectorLayer.layer_from_shapefile
+        county_centers = VectorLayer.layer_from_shapefile(self.map, "./data/ohioCountyPoints.shp")
 
         ## Style Layers
 
