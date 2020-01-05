@@ -17,10 +17,6 @@ import MapEngine
 import VectorLayer
 
 
-#! Load temp fake data loader
-import dataLoader
-
-
 class ToolController(GObject.GObject):
     """ """
     def __init__(self, map):
@@ -125,22 +121,21 @@ class MapView(Gtk.DrawingArea):
 
 
         ## Create MapEngine Object)
-        #self.map = MapEngine.MapEngine("EPSG:3857", (-83.0, 40.0))
-        self.map = MapEngine.MapEngine("EPSG:4326", (-83.0, 40.0))
+        self.map = MapEngine.MapEngine("EPSG:3857", (-83.0, 40.0))
+        #self.map = MapEngine.MapEngine("EPSG:4326", (-83.0, 40.0))
 
 
         ## Create map layers
-        coastlines = VectorLayer.VectorLayer(self.map, 'line', dataLoader.getLineFeatures1())
-        counties = VectorLayer.VectorLayer(self.map, 'polygon', dataLoader.getPolyFeatures())
-        #county_centers = VectorLayer.VectorLayer(self.map, 'point', dataLoader.getPointFeatures())
-
-        ## Test VectorLayer.layer_from_shapefile
+        counties = VectorLayer.layer_from_shapefile(self.map, "./data/OhioCounties.shp")
+        coastlines = VectorLayer.layer_from_shapefile(self.map, "./data/WorldCoastlines.shp")
         county_centers = VectorLayer.layer_from_shapefile(self.map, "./data/ohioCountyPoints.shp")
+        #countrys = VectorLayer.layer_from_shapefile(self.map, "./data/WorldCountries.shp")
 
         ## Style Layers
 
 
         ## Add layers to map
+        #self.map.addLayer(countrys) #! Really slow to load
         self.map.addLayer(coastlines)
         self.map.addLayer(counties)
         self.map.addLayer(county_centers)

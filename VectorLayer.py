@@ -8,48 +8,103 @@ Date: December 31, 2019
 from osgeo import ogr
 
 
-def layer_from_shapefile(MapEngine_obj, shapefile_path):
+
+
+
+def _get_geom_points(geom):
     """
+    Given a OGR geometry, returns a list structure of points.
+
+    Maybe use recurcion
+
+    WKBGeometryTypes
+    wkbPoint = 1,
+    wkbLineString = 2,
+    wkbPolygon = 3,
+    wkbMultiPoint = 4,
+    wkbMultiLineString = 5,
+    wkbMultiPolygon = 6,
+    wkbGeometryCollection = 7
     """
+    ## Create root point list
+    feature_point_stuct = []
+
+    if geom.GetGeometryName() == "POINT":
+        for point in geom.GetPoints():
+            feature_point_stuct = point
+
+    elif geom.GetGeometryName() == "LINESTRING":
+        linePoints = geom.GetPoints()
+        for point in linePoints:
+            feature_point_stuct.append(point)
+
+    elif geom.GetGeometryName() in ("POLYGON", "LINEARRING", "MULTIPOLYGON"):
+        for indx in range(geom.GetGeometryCount()):
+            subpoly_geom = geom.GetGeometryRef(indx)
+            subpoly_struct = []
+
+            if subpoly_geom.GetGeometryName() == "POLYGON":
+                subpoly_geom = subpoly_geom.GetGeometryRef(0)
+
+            for point in subpoly_geom.GetPoints():
+                subpoly_struct.append(point)
+
+            feature_point_stuct.append(subpoly_struct)
+
+    else:
+        print("There is an unexpected geometry type. WTF")
+        print(geom.GetGeometryName())
+        print()
+
+    ## Return root point list
+    return feature_point_stuct
+
+
+def data_from_shapefile(shapefile_path):
     ## Setup driver for shapefile, open shapefile
     driver = ogr.GetDriverByName('ESRI Shapefile')
     shapefile = driver.Open(shapefile_path, 0)
 
     ## Test if file is readable
-    if shapefile == None:
-        #! Throw error if file does exist
-        None
+    if shapefile == None: print("Bad File."); exit()
 
-    ## Get the shapefile single layer
+    ## Get data layer
     layer = shapefile.GetLayer()
 
-    ## Determine geometry type of shapefile
-    feature = layer.GetNextFeature()
-    geometry = feature.GetGeometryRef()
-    geotype = geometry.GetGeometryName()
-    layer.ResetReading()
+    ## Set int GetGeomType to string of geom type
+    geometry_type = [None, 'point', 'line', 'polygon'][layer.GetGeomType()]
 
-    if geotype == "POINT":
-        geometry_type = 'point'
-    elif geotype == "LINESTRING":
-        geometry_type = 'line'
-    elif geotype == "POLYGON":
-        geometry_type = 'polygon'
-    elif geotype == "LINEARRING":
-        geometry_type = 'polygon'
-    else:
-        #! Throw Error ??
-        None
+    ## Get layer field metadata
+    attrib_data = layer.GetLayerDefn()
 
-    if geometry_type == "point":
+    ## Create list of attributes field names
+    field_names = []
+    field_count = attrib_data.GetFieldCount()
+    for indx in range(field_count):
+        field_data = attrib_data.GetFieldDefn(indx)
+        field_names.append(field_data.GetName())
 
-        point_geometrys = []
-        for feature in layer:
-            geom = feature.GetGeometryRef()
-            for x in geom.GetPoints():
-                point_geometrys.append(x)
+    ## Create lists to hold lists of attributes and geometrys
+    attributes_list = []
+    geometrys_list = []
 
-        return VectorLayer(MapEngine_obj, geometry_type, point_geometrys) #! Add attributes names, and attributes
+    ## Loop through all features, loading attributes & geometry lists
+    for feature in layer:
+        feature_attributes = []
+        for indx in range(field_count):
+            feature_attributes.append(feature.GetField(indx))
+        attributes_list.append(feature_attributes)
+        geometrys_list.append(_get_geom_points(feature.GetGeometryRef()))
+
+    ## Return New vector Layer
+    return field_names, attributes_list, geometry_type, geometrys_list
+
+
+def layer_from_shapefile(MapEngine_obj, shapefile_path):
+    """
+    """
+    field_names, attributes_list, geometry_type, geometrys_list = data_from_shapefile(shapefile_path)
+    return VectorLayer(MapEngine_obj, geometry_type, geometrys_list)
 
 
 

@@ -48,7 +48,7 @@ class MainWindow(Gtk.Window):
         ## Set own window properties
         self.resize(1200, 800)
         self.set_title("Map Viewer")
-        self.set_border_width(3)
+        self.set_border_width(0)
 
         ## Create widgets
         self.map = MapView()

@@ -120,7 +120,6 @@ class MapEngine:
         ## Unpack points
         focusX, focusY = self._POI
         centerX, centerY = self.getCenterPoint()
-
         if isinstance(projPoint, list):
             ## Break list of projPoints in x and y list
             x = [coord[0] for coord in projPoint]
