@@ -126,9 +126,9 @@ class MapView(Gtk.DrawingArea):
 
 
         ## Create map layers
-        counties = VectorLayer.layer_from_shapefile(self.map, "./data/OhioCounties.shp")
-        coastlines = VectorLayer.layer_from_shapefile(self.map, "./data/WorldCoastlines.shp")
-        county_centers = VectorLayer.layer_from_shapefile(self.map, "./data/ohioCountyPoints.shp")
+        counties = VectorLayer.VectorLayer_from_shapefile(self.map, "./data/OhioCounties.shp")
+        coastlines = VectorLayer.VectorLayer_from_shapefile(self.map, "./data/WorldCoastlines.shp")
+        county_centers = VectorLayer.VectorLayer_from_shapefile(self.map, "./data/ohioCountyPoints.shp")
         #countrys = VectorLayer.layer_from_shapefile(self.map, "./data/WorldCountries.shp")
 
         ## Style Layers

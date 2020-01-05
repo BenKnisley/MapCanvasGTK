@@ -60,22 +60,13 @@ def _get_geom_points(geom):
     return feature_point_stuct
 
 
-def data_from_shapefile(shapefile_path):
-    ## Setup driver for shapefile, open shapefile
-    driver = ogr.GetDriverByName('ESRI Shapefile')
-    shapefile = driver.Open(shapefile_path, 0)
-
-    ## Test if file is readable
-    if shapefile == None: print("Bad File."); exit()
-
-    ## Get data layer
-    layer = shapefile.GetLayer()
+def _data_from_OGR_layer(ogrlayer):
 
     ## Set int GetGeomType to string of geom type
-    geometry_type = [None, 'point', 'line', 'polygon'][layer.GetGeomType()]
+    geometry_type = [None, 'point', 'line', 'polygon'][ogrlayer.GetGeomType()]
 
     ## Get layer field metadata
-    attrib_data = layer.GetLayerDefn()
+    attrib_data = ogrlayer.GetLayerDefn()
 
     ## Create list of attributes field names
     field_names = []
@@ -89,7 +80,7 @@ def data_from_shapefile(shapefile_path):
     geometrys_list = []
 
     ## Loop through all features, loading attributes & geometry lists
-    for feature in layer:
+    for feature in ogrlayer:
         feature_attributes = []
         for indx in range(field_count):
             feature_attributes.append(feature.GetField(indx))
@@ -100,10 +91,21 @@ def data_from_shapefile(shapefile_path):
     return field_names, attributes_list, geometry_type, geometrys_list
 
 
-def layer_from_shapefile(MapEngine_obj, shapefile_path):
+def VectorLayer_from_shapefile(MapEngine_obj, shapefile_path):
     """
     """
-    field_names, attributes_list, geometry_type, geometrys_list = data_from_shapefile(shapefile_path)
+    ## Setup driver for shapefile, open shapefile
+    driver = ogr.GetDriverByName('ESRI Shapefile')
+    shapefile = driver.Open(shapefile_path, 0)
+
+    ## Test if file is readable
+    if shapefile == None: print("Bad File."); exit()
+
+    ## Get OGR data layer
+    ogrlayer = shapefile.GetLayer()
+
+    ## Get data from ogrlayer, and return new VectorLayer
+    field_names, attributes_list, geometry_type, geometrys_list = _data_from_OGR_layer(ogrlayer)
     return VectorLayer(MapEngine_obj, geometry_type, geometrys_list)
 
 
@@ -122,7 +124,7 @@ class _FeatureStyle:
 
 
 class VectorLayer:
-    """"""
+    """ """
     def __init__(self, host_map_engine, geotype, inputdata):
 
         ##
