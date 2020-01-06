@@ -94,13 +94,10 @@ class ToolController(GObject.GObject):
         """ """
         if int(scroll.direction) == 0:
             self.map.zoomIn()
-            print( self.map.getScale(), "Units per Pixel" )
-            caller.callRedraw(self)
-
         else:
             self.map.zoomOut()
-            print( self.map.getScale(), "Units per Pixel" )
-            caller.callRedraw(self)
+
+        caller.callRedraw(self)
 
 
 class MapView(Gtk.DrawingArea):
@@ -121,8 +118,12 @@ class MapView(Gtk.DrawingArea):
 
 
         ## Create MapEngine Object)
-        self.map = MapEngine.MapEngine("EPSG:3857", (-83.0, 40.0))
-        #self.map = MapEngine.MapEngine("EPSG:4326", (-83.0, 40.0))
+        #self.map = MapEngine.MapEngine("EPSG:3857", (-83.0, 40.0))
+        #self.map = MapEngine.MapEngine("EPSG:3735", (-83.0, 40.0))
+        #self.map.setScale(2200)
+
+        self.map = MapEngine.MapEngine("EPSG:4326", (-83.0, 40.0))
+        #self.map.setScale(2200)
 
 
         ## Create map layers
@@ -132,6 +133,8 @@ class MapView(Gtk.DrawingArea):
         #countrys = VectorLayer.layer_from_shapefile(self.map, "./data/WorldCountries.shp")
 
         ## Style Layers
+        #VectorLayer.style_layer_random(counties)
+        VectorLayer.style_by_attribute(counties, name="Lucas")
 
 
         ## Add layers to map

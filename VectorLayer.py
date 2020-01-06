@@ -8,9 +8,6 @@ Date: December 31, 2019
 from osgeo import ogr
 
 
-
-
-
 def _get_geom_points(geom):
     """
     Given a OGR geometry, returns a list structure of points.
@@ -106,7 +103,48 @@ def VectorLayer_from_shapefile(MapEngine_obj, shapefile_path):
 
     ## Get data from ogrlayer, and return new VectorLayer
     field_names, attributes_list, geometry_type, geometrys_list = _data_from_OGR_layer(ogrlayer)
-    return VectorLayer(MapEngine_obj, geometry_type, geometrys_list)
+    return VectorLayer(MapEngine_obj, geometry_type, geometrys_list, field_names, attributes_list)
+
+
+def style_by_attribute(input_layer, **kw):
+    """ This is a junk function, not to be kept. """
+
+    newstyle = _FeatureStyle()
+    newstyle.polyColor = (1,0,1)
+
+    for field in kw:
+        input_value = kw[field]
+        if field not in input_layer.fields: print("Bad attribute name"); return
+
+        field_index = input_layer.fields.index(field)
+
+        for indx, featureAttrb in enumerate(input_layer.attributes_store):
+            if featureAttrb[field_index] == input_value:
+                input_layer.styles[indx] = newstyle
+
+
+
+
+
+
+
+def style_layer_random(input_layer):
+    """ This is a junk function, not to be kept. """
+    ## Define colors in list
+    colors = [(1,0,0),
+              (0,1,0),
+              (0,0,1),
+              (0,0.5,0),
+              (0.5,0.5,0.5),
+              (0.5,0,0)]
+
+    counter = 0
+    for style in input_layer.styles:
+        style.polyColor = colors[counter]
+
+        counter += 1
+        if counter == len(colors): counter = 0
+
 
 
 
@@ -125,12 +163,16 @@ class _FeatureStyle:
 
 class VectorLayer:
     """ """
-    def __init__(self, host_map_engine, geotype, inputdata):
-
+    def __init__(self, host_map_engine, geotype, geom_data, field_names, attributes_list):
+        """ """
         ##
+        #! MAKE THESE PRIVATE
         self._map_engine = host_map_engine
         self.geotype = geotype
-        self.rawdata = inputdata
+        self.rawdata = geom_data #! RENAME THIS
+        self.fields = field_names
+        self.attributes_store = attributes_list
+
 
         self.features = []
         self.attributes = []
@@ -139,8 +181,8 @@ class VectorLayer:
         self.projectData()
 
         ## Set Defalt map style to each feature
-        new_style = _FeatureStyle()
         for _ in self.features:
+            new_style = _FeatureStyle()
             self.styles.append(new_style)
 
     def projectData(self):
