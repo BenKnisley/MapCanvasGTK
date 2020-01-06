@@ -120,6 +120,8 @@ class MapEngine:
         ## Unpack points
         focusX, focusY = self._POI
         centerX, centerY = self.getCenterPoint()
+
+        ##
         if isinstance(projPoint, list):
             ## Break list of projPoints in x and y list
             x = [coord[0] for coord in projPoint]
@@ -132,8 +134,6 @@ class MapEngine:
             ## Do math logic on all points
             pixelX = ((x - focusX) / self._scale) + centerX
             pixelY = -((y - focusY) / self._scale) + centerY
-
-            #pixelX, pixelY = pixelY, pixelX
 
             pixPoint = list( zip(pixelX, pixelY) )
 
@@ -188,7 +188,6 @@ class MapEngine:
         cr.set_source_rgb(0.05, 0.05, 0.05) ## Set color to 95% black
         cr.rectangle( 0,0, self._size[0], self._size[1] ) ## Draw rectangle over entire widget
         cr.fill() ## Fill rectangle
-
 
         for layer in self._layer_list:
             layer.draw(cr)

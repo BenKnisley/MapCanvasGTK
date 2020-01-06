@@ -127,10 +127,10 @@ class MapView(Gtk.DrawingArea):
 
 
         ## Create map layers
-        counties = VectorLayer.VectorLayer_from_shapefile(self.map, "./data/OhioCounties.shp")
-        coastlines = VectorLayer.VectorLayer_from_shapefile(self.map, "./data/WorldCoastlines.shp")
-        county_centers = VectorLayer.VectorLayer_from_shapefile(self.map, "./data/ohioCountyPoints.shp")
-        #countrys = VectorLayer.layer_from_shapefile(self.map, "./data/WorldCountries.shp")
+        counties = VectorLayer.from_shapefile(self.map, "./data/OhioCounties.shp")
+        coastlines = VectorLayer.from_shapefile(self.map, "./data/WorldCoastlines.shp")
+        county_centers = VectorLayer.from_shapefile(self.map, "./data/ohioCountyPoints.shp")
+        countrys = VectorLayer.from_shapefile(self.map, "./data/WorldCountries.shp")
 
         ## Style Layers
         #VectorLayer.style_layer_random(counties)
@@ -138,7 +138,7 @@ class MapView(Gtk.DrawingArea):
 
 
         ## Add layers to map
-        #self.map.addLayer(countrys) #! Really slow to load
+        self.map.addLayer(countrys) #! Really slow to load
         self.map.addLayer(coastlines)
         self.map.addLayer(counties)
         self.map.addLayer(county_centers)
@@ -164,7 +164,6 @@ class MapView(Gtk.DrawingArea):
     def callRedraw(self, caller):
         """ Causes canvas to redraw self """
         self.queue_draw()
-
 
     def draw(self, caller, cr):
         """ """

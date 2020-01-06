@@ -88,7 +88,7 @@ def _data_from_OGR_layer(ogrlayer):
     return field_names, attributes_list, geometry_type, geometrys_list
 
 
-def VectorLayer_from_shapefile(MapEngine_obj, shapefile_path):
+def from_shapefile(MapEngine_obj, shapefile_path):
     """
     """
     ## Setup driver for shapefile, open shapefile
