@@ -131,17 +131,29 @@ class MapEngine:
             x = np.array(x)
             y = np.array(y)
 
+            #x = np.round(x, decimals=10)
+            #y = np.round(y, decimals=10)
+
             ## Do math logic on all points
             pixelX = ((x - focusX) / self._scale) + centerX
             pixelY = -((y - focusY) / self._scale) + centerY
 
+            ## Round to int to make drawing faster
+            pixelX = np.rint(pixelX)
+            pixelY = np.rint(pixelY)
+
             pixPoint = list( zip(pixelX, pixelY) )
+            #print(pixPoint)
 
         else:
             projX, projY = projPoint
             ##
             pixelX = ((projX - focusX) * self._scale) + centerX
             pixelY = -((projY - focusY) * self._scale) + centerY
+
+            pixelX = int(pixelX)
+            pixelY = int(pixelY)
+
             pixPoint = (pixelX, pixelY)
 
         return pixPoint
