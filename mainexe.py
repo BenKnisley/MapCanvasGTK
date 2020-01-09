@@ -46,7 +46,7 @@ class MainWindow(Gtk.Window):
         GObject.GObject.__init__(self)
 
         ## Set own window properties
-        self.resize(1200, 800)
+        self.resize(1700, 900)
         self.set_title("Map Viewer")
         self.set_border_width(0)
 

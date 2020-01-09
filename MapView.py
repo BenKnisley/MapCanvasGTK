@@ -12,19 +12,19 @@ import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, Gdk, Gio, GObject
 
-## Import MapEngine
+## Import MapEngine, and VectorLayer
 import MapEngine
 import VectorLayer
 
 
 class ToolController(GObject.GObject):
-    """ """
+    """
+    Class to receive signals & abstract higher level functions.
+    """
     def __init__(self, map):
         """ """
         GObject.GObject.__init__(self)
-
         self.map = map
-
 
         ## Define public mouse button trackers
         self.leftHeld = False
@@ -59,18 +59,16 @@ class ToolController(GObject.GObject):
         elif click.button == 2: ## Middle click
             self.midHeld = False
             self.MDragPOS = (None, None)
+
         else: ## Right click
             self.rightHeld = False
             self.RDragPOS = (None, None)
 
     def mouseDrag(self, caller, move):
         if self.leftHeld:
-            print("Left Drag")
-
-        if self.midHeld:
             ## Unpack Points
             cenX, cenY = self.map.getCenterPoint()
-            orgnX, orgnY = self.MDragPOS
+            orgnX, orgnY = self.LDragPOS
 
             ## Calulate new pixel point from drag distance
             newPixPoint = ( (cenX + (orgnX - move.x)), (cenY + -(orgnY - move.y)) )
@@ -80,15 +78,16 @@ class ToolController(GObject.GObject):
             self.map.setPOI(newProjPoint)
 
             ## Set drag orgin point
-            self.MDragPOS = (move.x, move.y)
+            self.LDragPOS = (move.x, move.y)
 
             ## Call redraw
             caller.callRedraw(self)
 
-        if self.rightHeld:
-            #print("Right Drag")
-            None
+        if self.midHeld:
+            pass
 
+        if self.rightHeld:
+            pass
 
     def scroll(self, caller, scroll):
         """ """
@@ -119,6 +118,7 @@ class MapView(Gtk.DrawingArea):
 
         ## Create MapEngine Object)
         #self.map = MapEngine.MapEngine("EPSG:3857", (-83.0, 40.0))
+
         #self.map = MapEngine.MapEngine("EPSG:3735", (-83.0, 40.0))
         #self.map.setScale(2200)
 
@@ -127,21 +127,28 @@ class MapView(Gtk.DrawingArea):
 
 
         ## Create map layers
+
+        citys = VectorLayer.from_shapefile(self.map, "./data/WorldCities.shp")
+        rivers = VectorLayer.from_shapefile(self.map, "./data/OH_Rivers.shp")
         counties = VectorLayer.from_shapefile(self.map, "./data/OhioCounties.shp")
+        states = VectorLayer.from_shapefile(self.map, "./data/cb_2015_us_state_500k.shp")
         coastlines = VectorLayer.from_shapefile(self.map, "./data/WorldCoastlines.shp")
         county_centers = VectorLayer.from_shapefile(self.map, "./data/ohioCountyPoints.shp")
-        countrys = VectorLayer.from_shapefile(self.map, "./data/WorldCountries.shp")
+        #countrys = VectorLayer.from_shapefile(self.map, "./data/WorldCountries.shp")
 
         ## Style Layers
-        #VectorLayer.style_layer_random(counties)
+        #VectorLayer.style_layer_random(countrys)
         VectorLayer.style_by_attribute(counties, name="Lucas")
 
 
         ## Add layers to map
-        self.map.addLayer(countrys) #! Really slow to load
+        #self.map.addLayer(countrys) #! Really slow to load
         self.map.addLayer(coastlines)
+        self.map.addLayer(states)
         self.map.addLayer(counties)
         self.map.addLayer(county_centers)
+        self.map.addLayer(rivers)
+        self.map.addLayer(citys)
 
 
 

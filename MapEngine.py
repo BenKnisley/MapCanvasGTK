@@ -131,8 +131,8 @@ class MapEngine:
             x = np.array(x)
             y = np.array(y)
 
-            #x = np.round(x, decimals=10)
-            #y = np.round(y, decimals=10)
+            #x = np.round(x, decimals=2)
+            #y = np.round(y, decimals=2)
 
             ## Do math logic on all points
             pixelX = ((x - focusX) / self._scale) + centerX
@@ -143,7 +143,7 @@ class MapEngine:
             pixelY = np.rint(pixelY)
 
             pixPoint = list( zip(pixelX, pixelY) )
-            #print(pixPoint)
+
 
         else:
             projX, projY = projPoint

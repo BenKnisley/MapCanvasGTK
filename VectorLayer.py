@@ -30,10 +30,25 @@ def _get_geom_points(geom):
         for point in geom.GetPoints():
             feature_point_stuct = point
 
-    elif geom.GetGeometryName() == "LINESTRING":
-        linePoints = geom.GetPoints()
-        for point in linePoints:
-            feature_point_stuct.append(point)
+    elif geom.GetGeometryName() in ("LINESTRING", "MULTILINESTRING"):
+        geocount = geom.GetGeometryCount()
+        if geocount == 0:
+            subgeom_struct = []
+
+            for point in geom.GetPoints():
+                subgeom_struct.append(point)
+
+            feature_point_stuct.append(subgeom_struct)
+
+        else:
+            for indx in range(geom.GetGeometryCount()):
+                subgeom = geom.GetGeometryRef(indx)
+                subgeom_struct = []
+
+                for point in subgeom.GetPoints():
+                    subgeom_struct.append(point)
+
+                feature_point_stuct.append(subgeom_struct)
 
     elif geom.GetGeometryName() in ("POLYGON", "LINEARRING", "MULTIPOLYGON"):
         for indx in range(geom.GetGeometryCount()):
@@ -190,9 +205,17 @@ class VectorLayer:
         if self.geotype == 'point':
             self.features = self._map_engine.geo2proj( self.rawdata )
 
+        #elif self.geotype == 'line':
+        #    for line in self.rawdata:
+        #        self.features.append( self._map_engine.geo2proj(line) )
+
         elif self.geotype == 'line':
-            for line in self.rawdata:
-                self.features.append( self._map_engine.geo2proj(line) )
+            for mutiline in self.rawdata:
+                proj_line = []
+                for line in mutiline:
+                    proj_line.append(self._map_engine.geo2proj(line))
+
+                self.features.append(proj_line)
 
         else:# self.geotype == polygon:
             for polygon in self.rawdata:
@@ -213,7 +236,10 @@ class VectorLayer:
 
         elif self.geotype == 'line':
             for projLine, style in zip(self.features, self.styles):
-                pixLine = self._map_engine.proj2pix(projLine)
+                pixLine = []
+                for subline in projLine:
+                    pix_subline = self._map_engine.proj2pix(subline)
+                    pixLine.append(pix_subline)
                 self._map_engine._map_painter.drawLine(cr, pixLine, style)
 
         else: # self.geotype == polygon:

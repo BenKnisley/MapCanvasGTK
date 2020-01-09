@@ -22,17 +22,18 @@ class CairoMapPainter:
 
         cr.set_source_rgb(R, G, B)
         cr.set_line_width(W)
+        for subline in line:
+            initPnt = subline[0]
+            cr.move_to( initPnt[0], initPnt[1] )
 
-        initPnt = line[0]
-        cr.move_to( initPnt[0], initPnt[1] )
-
-        for point in line:
-            cr.line_to( point[0], point[1] )
-
-        cr.stroke()
+            for point in subline:
+                cr.line_to( point[0], point[1] )
+            cr.stroke()
 
     def drawPolygon(self, cr, polygon, style):
         """ """
+        last_drawn = (None, None)
+
         R, G, B = style.polyColor
         cr.set_source_rgb(R, G, B)
 
@@ -41,7 +42,9 @@ class CairoMapPainter:
             cr.move_to( initPnt[0], initPnt[1] )
 
             for point in subpoly:
-                cr.line_to( point[0], point[1] )
+                if point != last_drawn:
+                    cr.line_to( point[0], point[1] )
+                    last_drawn = point
         cr.fill()
 
 
