@@ -128,11 +128,11 @@ class MapView(Gtk.DrawingArea):
 
         ## Create map layers
 
-        citys = VectorLayer.from_shapefile(self.map, "./data/WorldCities.shp")
-        rivers = VectorLayer.from_shapefile(self.map, "./data/OH_Rivers.shp")
+        #citys = VectorLayer.from_shapefile(self.map, "./data/WorldCities.shp")
+        #rivers = VectorLayer.from_shapefile(self.map, "./data/OH_Rivers.shp")
         counties = VectorLayer.from_shapefile(self.map, "./data/OhioCounties.shp")
-        states = VectorLayer.from_shapefile(self.map, "./data/cb_2015_us_state_500k.shp")
-        coastlines = VectorLayer.from_shapefile(self.map, "./data/WorldCoastlines.shp")
+        #states = VectorLayer.from_shapefile(self.map, "./data/cb_2015_us_state_500k.shp")
+        #coastlines = VectorLayer.from_shapefile(self.map, "./data/WorldCoastlines.shp")
         county_centers = VectorLayer.from_shapefile(self.map, "./data/ohioCountyPoints.shp")
         #countrys = VectorLayer.from_shapefile(self.map, "./data/WorldCountries.shp")
 
@@ -143,12 +143,12 @@ class MapView(Gtk.DrawingArea):
 
         ## Add layers to map
         #self.map.addLayer(countrys) #! Really slow to load
-        self.map.addLayer(coastlines)
-        self.map.addLayer(states)
+        #self.map.addLayer(coastlines)
+        #self.map.addLayer(states)
         self.map.addLayer(counties)
         self.map.addLayer(county_centers)
-        self.map.addLayer(rivers)
-        self.map.addLayer(citys)
+        #self.map.addLayer(rivers)
+        #self.map.addLayer(citys)
 
 
 
