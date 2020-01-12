@@ -54,7 +54,7 @@ class ToolController(GObject.GObject):
             self.leftHeld = False
             self.LDragPOS = (None, None)
 
-            print( self.map.getPOI() )
+            #print( self.map.getPOI() )
 
         elif click.button == 2: ## Middle click
             self.midHeld = False
@@ -119,10 +119,10 @@ class MapView(Gtk.DrawingArea):
         ## Create MapEngine Object)
         #self.map = MapEngine.MapEngine("EPSG:3857", (-83.0, 40.0))
 
-        #self.map = MapEngine.MapEngine("EPSG:3735", (-83.0, 40.0))
-        #self.map.setScale(2200)
+        self.map = MapEngine.MapEngine("EPSG:3735", (-83.0, 40.0))
+        self.map.setScale(2200)
 
-        self.map = MapEngine.MapEngine("EPSG:4326", (-83.0, 40.0))
+        #self.map = MapEngine.MapEngine("EPSG:4326", (-83.0, 40.0))
         #self.map.setScale(2200)
 
 
