@@ -137,12 +137,6 @@ def style_by_attribute(input_layer, **kw):
             if featureAttrb[field_index] == input_value:
                 input_layer.styles[indx] = newstyle
 
-
-
-
-
-
-
 def style_layer_random(input_layer):
     """ This is a junk function, not to be kept. """
     ## Define colors in list
@@ -159,8 +153,6 @@ def style_layer_random(input_layer):
 
         counter += 1
         if counter == len(colors): counter = 0
-
-
 
 
 class _FeatureStyle:
@@ -202,6 +194,7 @@ class VectorLayer:
 
     def projectData(self):
         self.features = [] ## Clear existing features
+
         if self.geotype == 'point':
             self.features = self._project_points(self.rawdata)
 
@@ -210,6 +203,7 @@ class VectorLayer:
 
         else:# self.geotype == polygon:
             self.features = self._project_polys(self.rawdata)
+
 
     def _project_points(self, geofeatures):
         """ projectData Helper function """
