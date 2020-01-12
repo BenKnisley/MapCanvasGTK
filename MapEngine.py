@@ -12,6 +12,7 @@ import numpy as np
 
 ## Import MapLayer and style
 from VectorLayer import VectorLayer
+import GeoFunctions
 import CairoMapPainter
 
 
@@ -85,35 +86,17 @@ class MapEngine:
         return (x, y)
 
 
-    def geo2proj(self, geoPoint): ## geoPoint tuple (lat, lon)
+
+    def geo2proj(self, geo_data):
         """
         """
+        proj_data = GeoFunctions.geo2proj(geo_data, self._WGS84, self._proj)
+        return proj_data
 
-        if self._WGS84 == self._proj:
-            return geoPoint
-
-
-        if isinstance(geoPoint, list):
-            #!!! switched 1, and 0
-            lat = [coord[1] for coord in geoPoint]
-            lon = [coord[0] for coord in geoPoint]
-            x, y = pyproj.transform(self._WGS84, self._proj, lat, lon)
-            #x,y = y,x
-            projPoint = list( zip(x,y) )
-        else:
-            lon, lat = geoPoint
-            x, y = pyproj.transform(self._WGS84, self._proj, lat, lon) ## alwaysXy
-            #x,y = y,x
-            projPoint = (x, y)
-
-        return projPoint
-
-    def proj2geo(self, projPoint): ## projPoint tuple (x, y)
+    def proj2geo(self, proj_data):
         """ """
-        x, y = projPoint
-        lon, lat = pyproj.transform(self._WGS84, self._proj, x, y)
-        geoPoint = (lat, lon)
-        return geoPoint
+        geo_data = GeoFunctions.proj2geo(proj_data, self._WGS84, self._proj)
+        return geo_data
 
     def proj2pix(self, projPoint):
         """ """
@@ -187,6 +170,7 @@ class MapEngine:
         projPoint = self.pix2proj(pixPoint)
         geoPoint = self.proj2geo(projPoint)
         return geoPoint
+
 
 
 
