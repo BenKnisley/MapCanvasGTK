@@ -203,26 +203,38 @@ class VectorLayer:
     def projectData(self):
         self.features = [] ## Clear existing features
         if self.geotype == 'point':
-            self.features = self._map_engine.geo2proj( self.rawdata )
-
-        #elif self.geotype == 'line':
-        #    for line in self.rawdata:
-        #        self.features.append( self._map_engine.geo2proj(line) )
+            self.features = self._project_points(self.rawdata)
 
         elif self.geotype == 'line':
-            for mutiline in self.rawdata:
-                proj_line = []
-                for line in mutiline:
-                    proj_line.append(self._map_engine.geo2proj(line))
-
-                self.features.append(proj_line)
+            self.features = self._project_lines(self.rawdata)
 
         else:# self.geotype == polygon:
-            for polygon in self.rawdata:
-                projPoly = []
-                for subpoly in polygon:
-                    projPoly.append( self._map_engine.geo2proj(subpoly) )
-                self.features.append(projPoly)
+            self.features = self._project_polys(self.rawdata)
+
+    def _project_points(self, geofeatures):
+        """ projectData Helper function """
+        return self._map_engine.geo2proj(geofeatures)
+
+    def _project_lines(self, geofeatures):
+        """ projectData Helper function """
+        projfeatures = []
+        for mutiline in geofeatures:
+            proj_line = []
+            for line in mutiline:
+                proj_line.append(self._map_engine.geo2proj(line))
+            projfeatures.append(proj_line)
+        return projfeatures
+
+    def _project_polys(self, geofeatures):
+        """ projectData Helper function """
+        projfeatures = []
+        for polygon in geofeatures:
+            projPoly = []
+            for subpoly in polygon:
+                projPoly.append( self._map_engine.geo2proj(subpoly) )
+            projfeatures.append(projPoly)
+        return projfeatures
+
 
     def setStyle(self, index, style):
         """ """
