@@ -6,7 +6,7 @@ Date: December 31, 2019
 
 ## Import OGR
 from osgeo import ogr
-
+import multiprocessing
 
 def _get_geom_points(geom):
     """
@@ -193,18 +193,20 @@ class VectorLayer:
             self.styles.append(new_style)
 
     def projectData(self):
+        """ """
         self.features = [] ## Clear existing features
 
         if self.geotype == 'point':
+            ## No multiprocessing, already optimized
             self.features = self._project_points(self.rawdata)
 
         elif self.geotype == 'line':
-            for geofeature in self.rawdata:
-                self.features.append(self._project_line(geofeature))
+            with multiprocessing.Pool(processes=8) as pool:
+                self.features = pool.map(self._project_line, self.rawdata)
 
-        else:# self.geotype == polygon:
-            for geofeature in self.rawdata:
-                self.features.append(self._project_poly(geofeature))
+        elif self.geotype == 'polygon':
+            with multiprocessing.Pool(processes=8) as pool:
+                self.features = pool.map(self._project_poly, self.rawdata)
 
 
     def _project_points(self, geofeatures):
