@@ -199,35 +199,31 @@ class VectorLayer:
             self.features = self._project_points(self.rawdata)
 
         elif self.geotype == 'line':
-            self.features = self._project_lines(self.rawdata)
+            for geofeature in self.rawdata:
+                self.features.append(self._project_line(geofeature))
 
         else:# self.geotype == polygon:
-            self.features = self._project_polys(self.rawdata)
+            for geofeature in self.rawdata:
+                self.features.append(self._project_poly(geofeature))
 
 
     def _project_points(self, geofeatures):
         """ projectData Helper function """
         return self._map_engine.geo2proj(geofeatures)
 
-    def _project_lines(self, geofeatures):
+    def _project_line(self, geoline):
         """ projectData Helper function """
-        projfeatures = []
-        for mutiline in geofeatures:
-            proj_line = []
-            for line in mutiline:
-                proj_line.append(self._map_engine.geo2proj(line))
-            projfeatures.append(proj_line)
-        return projfeatures
+        projline = []
+        for subline in geoline:
+            projline.append( self._map_engine.geo2proj(subline) )
+        return projline
 
-    def _project_polys(self, geofeatures):
+    def _project_poly(self, geopoly):
         """ projectData Helper function """
-        projfeatures = []
-        for polygon in geofeatures:
-            projPoly = []
-            for subpoly in polygon:
-                projPoly.append( self._map_engine.geo2proj(subpoly) )
-            projfeatures.append(projPoly)
-        return projfeatures
+        projpoly = []
+        for subpoly in geopoly:
+            projpoly.append( self._map_engine.geo2proj(subpoly) )
+        return projpoly
 
 
     def setStyle(self, index, style):
