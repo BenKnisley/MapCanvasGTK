@@ -86,6 +86,8 @@ class MapEngine:
         return (x, y)
 
 
+    ## GeoFunctions Wrapper functions
+    ## Added to 
 
     def geo2proj(self, geo_data):
         """

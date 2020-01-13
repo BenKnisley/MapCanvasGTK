@@ -71,7 +71,6 @@ def _get_geom_points(geom):
     ## Return root point list
     return feature_point_stuct
 
-
 def _data_from_OGR_layer(ogrlayer):
 
     ## Set int GetGeomType to string of geom type
@@ -101,7 +100,6 @@ def _data_from_OGR_layer(ogrlayer):
 
     ## Return New vector Layer
     return field_names, attributes_list, geometry_type, geometrys_list
-
 
 def from_shapefile(MapEngine_obj, shapefile_path):
     """
@@ -154,8 +152,8 @@ def style_layer_random(input_layer):
         counter += 1
         if counter == len(colors): counter = 0
 
-
 class _FeatureStyle:
+    """ """
     def __init__(self):
         self.pointcolor = (0.61, 0.13, 0.15)
         self.pointradius = 2
@@ -192,9 +190,19 @@ class VectorLayer:
             new_style = _FeatureStyle()
             self.styles.append(new_style)
 
+    def setStyle(self, index, style):
+        """ """
+        None
+
     def projectData(self):
         """ """
-        self.features = [] ## Clear existing features
+        ## Clear existing features
+        self.features = []
+
+        ## If source and destination proj are same, skip projection overhead
+        if self._map_engine._WGS84 == self._map_engine._proj:
+            self.features = self.rawdata
+            return
 
         if self.geotype == 'point':
             ## No multiprocessing, already optimized
@@ -207,7 +215,6 @@ class VectorLayer:
         elif self.geotype == 'polygon':
             with multiprocessing.Pool(processes=8) as pool:
                 self.features = pool.map(self._project_poly, self.rawdata)
-
 
     def _project_points(self, geofeatures):
         """ projectData Helper function """
@@ -228,9 +235,7 @@ class VectorLayer:
         return projpoly
 
 
-    def setStyle(self, index, style):
-        """ """
-        None
+
 
     def draw(self, cr):
         if self.geotype == 'point':

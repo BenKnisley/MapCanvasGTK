@@ -118,12 +118,9 @@ class MapView(Gtk.DrawingArea):
 
         ## Create MapEngine Object)
         #self.map = MapEngine.MapEngine("EPSG:3857", (-83.0, 40.0))
-
         #self.map = MapEngine.MapEngine("EPSG:3735", (-83.0, 40.0))
         #self.map.setScale(2200)
-
         self.map = MapEngine.MapEngine("EPSG:4326", (-83.0, 40.0))
-        #self.map.setScale(2200)
 
 
         ## Create map layers
