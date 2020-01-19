@@ -12,9 +12,9 @@ import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, Gdk, Gio, GObject
 
+
 ## Import MapEngine, and VectorLayer
-import MapEngine
-import VectorLayer
+from MapEngine import MapEngine, VectorLayer
 
 
 class ToolController(GObject.GObject):
@@ -118,9 +118,9 @@ class MapView(Gtk.DrawingArea):
 
         ## Create MapEngine Object)
         #self.map = MapEngine.MapEngine("EPSG:3857", (-83.0, 40.0))
-        #self.map = MapEngine.MapEngine("EPSG:3735", (-83.0, 40.0))
-        #self.map.setScale(2200)
-        self.map = MapEngine.MapEngine("EPSG:4326", (-83.0, 40.0))
+        self.map = MapEngine.MapEngine("EPSG:3735", (-83.0, 40.0))
+        self.map.setScale(2200)
+        #self.map = MapEngine.MapEngine("EPSG:4326", (-83.0, 40.0))
 
 
         ## Create map layers
