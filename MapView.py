@@ -24,6 +24,7 @@ class ToolController(GObject.GObject):
     def __init__(self, map):
         """ """
         GObject.GObject.__init__(self)
+
         self.map = map
 
         ## Define public mouse button trackers
@@ -64,10 +65,12 @@ class ToolController(GObject.GObject):
             self.rightHeld = False
             self.RDragPOS = (None, None)
 
+            ##
+
     def mouseDrag(self, caller, move):
         if self.leftHeld:
             ## Unpack Points
-            cenX, cenY = self.map.getCenterPoint()
+            cenX, cenY = self.map.get_canvas_center()
             orgnX, orgnY = self.LDragPOS
 
             ## Calulate new pixel point from drag distance
@@ -75,7 +78,7 @@ class ToolController(GObject.GObject):
 
             ## Calulate new map POI
             newProjPoint = self.map.pix2proj(newPixPoint)
-            self.map.setPOI(newProjPoint)
+            self.map.set_POI(newProjPoint)
 
             ## Set drag orgin point
             self.LDragPOS = (move.x, move.y)
@@ -92,20 +95,23 @@ class ToolController(GObject.GObject):
     def scroll(self, caller, scroll):
         """ """
         if int(scroll.direction) == 0:
-            self.map.zoomIn()
+            self.map.set_scale( self.map.get_scale() * 1.1 )
         else:
-            self.map.zoomOut()
+            self.map.set_scale( self.map.get_scale() / 1.1 )
 
         caller.callRedraw(self)
 
-
-class MapView(Gtk.DrawingArea):
+class MapView(Gtk.DrawingArea, MapEngine.MapEngine):
     """ """
     def __init__(self):
         """ """
         ## Implement inheritance from Gtk.Window & Gtk.GObject
         Gtk.DrawingArea.__init__(self)
         GObject.GObject.__init__(self)
+        MapEngine.MapEngine.__init__(self)
+
+        ## Create ToolController Object
+        self.tools = ToolController(self)
 
         ## Add capability to detect mouse events
         self.add_events(Gdk.EventMask.BUTTON_PRESS_MASK)
@@ -115,56 +121,16 @@ class MapView(Gtk.DrawingArea):
         self.add_events(Gdk.EventMask.BUTTON3_MOTION_MASK)
         self.add_events(Gdk.EventMask.SCROLL_MASK)
 
-
-        ## Create MapEngine Object)
-        #self.map = MapEngine.MapEngine("EPSG:3857", (-83.0, 40.0))
-        self.map = MapEngine.MapEngine("EPSG:3735", (-83.0, 40.0))
-        self.map.setScale(2200)
-        #self.map = MapEngine.MapEngine("EPSG:4326", (-83.0, 40.0))
-
-
-        ## Create map layers
-
-        #citys = VectorLayer.from_shapefile(self.map, "./data/WorldCities.shp")
-        rivers = VectorLayer.from_shapefile(self.map, "./data/OH_Rivers.shp")
-        #counties = VectorLayer.from_shapefile(self.map, "./data/OhioCounties.shp")
-        #states = VectorLayer.from_shapefile(self.map, "./data/cb_2015_us_state_500k.shp")
-        #coastlines = VectorLayer.from_shapefile(self.map, "./data/WorldCoastlines.shp")
-        #county_centers = VectorLayer.from_shapefile(self.map, "./data/ohioCountyPoints.shp")
-        countrys = VectorLayer.from_shapefile(self.map, "./data/WorldCountries.shp")
-        #countrys = VectorLayer.from_shapefile(self.map, "./data/WorldPoints.shp")
-
-        ## Style Layers
-        #VectorLayer.style_layer_random(countrys)
-        #VectorLayer.style_by_attribute(counties, name="Lucas")
-
-
-        ## Add layers to map
-        self.map.addLayer(countrys) #! Really slow to load
-        #self.map.addLayer(coastlines)
-        #self.map.addLayer(states)
-        #self.map.addLayer(counties)
-        #self.map.addLayer(county_centers)
-        self.map.addLayer(rivers)
-        #self.map.addLayer(citys)
-
-
-
-        ## Create ToolController Object
-        self.tools = ToolController(self.map)
-
         ## Connect Stuff
-
-        self.connect("configure_event", self.hello)
+        self.connect("configure_event", self.startup)
         self.connect("scroll-event", self.tools.scroll)
         self.connect("button-press-event", self.tools.buttonPress)
         self.connect("button-release-event", self.tools.buttonRelease)
         self.connect("motion-notify-event", self.tools.mouseDrag)
-
         self.connect("draw", self.draw)
 
-    def hello(self, *args):
-        None
+    def startup(self, caller, data):
+        pass
 
     def callRedraw(self, caller):
         """ Causes canvas to redraw self """
@@ -172,7 +138,7 @@ class MapView(Gtk.DrawingArea):
 
     def draw(self, caller, cr):
         """ """
-        exit()
         ## Call on map engine to draw map on canvas
-        self.map.setSize((self.get_allocated_width(), self.get_allocated_height()))
-        self.map.paintCanvas(cr)
+        self.set_size((self.get_allocated_width(), self.get_allocated_height()))
+        self.draw_map(cr)
+        #exit()
