@@ -6,18 +6,19 @@ Author: Ben Knisley [benknisley@gmail.com]
 Date: 8 December, 2019
 Function: A Gtk Widget that provides a map.
 """
-
-## Import PyGtk Modules
+## Import PyGtk modules
 import gi
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, Gdk, Gio, GObject
 
+## Import MapEngine modules
+from MapEngine import MapEngine
+from MapEngine import VectorLayer
 
-## Import MapEngine, and VectorLayer
-from MapEngine import MapEngine, VectorLayer
+from timer import time_function
 
 
-class ToolController(GObject.GObject):
+class _ToolController(GObject.GObject):
     """
     Class to receive signals & abstract higher level functions.
     """
@@ -60,6 +61,7 @@ class ToolController(GObject.GObject):
         elif click.button == 2: ## Middle click
             self.midHeld = False
             self.MDragPOS = (None, None)
+            self.map.callRedraw(self)
 
         else: ## Right click
             self.rightHeld = False
@@ -77,7 +79,7 @@ class ToolController(GObject.GObject):
             newPixPoint = ( (cenX + (orgnX - move.x)), (cenY + -(orgnY - move.y)) )
 
             ## Calulate new map POI
-            newProjPoint = self.map.pix2proj(newPixPoint)
+            newProjPoint = self.map.pix2proj(newPixPoint[0], newPixPoint[1])
             self.map.set_POI(newProjPoint)
 
             ## Set drag orgin point
@@ -105,13 +107,13 @@ class MapView(Gtk.DrawingArea, MapEngine.MapEngine):
     """ """
     def __init__(self):
         """ """
-        ## Implement inheritance from Gtk.Window & Gtk.GObject
-        Gtk.DrawingArea.__init__(self)
+        ## Implement inheritance from GObject, DrawingArea, and MapEngine.
         GObject.GObject.__init__(self)
+        Gtk.DrawingArea.__init__(self)
         MapEngine.MapEngine.__init__(self)
 
         ## Create ToolController Object
-        self.tools = ToolController(self)
+        self.tools = _ToolController(self)
 
         ## Add capability to detect mouse events
         self.add_events(Gdk.EventMask.BUTTON_PRESS_MASK)
@@ -136,9 +138,10 @@ class MapView(Gtk.DrawingArea, MapEngine.MapEngine):
         """ Causes canvas to redraw self """
         self.queue_draw()
 
+    @time_function
     def draw(self, caller, cr):
         """ """
-        ## Call on map engine to draw map on canvas
+        ## Set match size matches widget size
         self.set_size((self.get_allocated_width(), self.get_allocated_height()))
-        self.draw_map(cr)
-        #exit()
+        ## Call MapEngine render method on Cario context
+        self.render(cr)
