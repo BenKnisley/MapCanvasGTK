@@ -77,8 +77,8 @@ class _ToolController(GObject.GObject):
             newPixPoint = ( (cenX + (orgnX - move.x)), (cenY + -(orgnY - move.y)) )
 
             ## Calulate new map POI
-            newProjPoint = self.map.pix2proj(newPixPoint[0], newPixPoint[1])
-            self.map.set_POI(newProjPoint)
+            projx, projy = self.map.pix2proj(newPixPoint[0], newPixPoint[1])
+            self.map.set_proj_coordinate(projx, projy)
 
             ## Set drag orgin point
             self.LDragPOS = (move.x, move.y)
@@ -100,6 +100,7 @@ class _ToolController(GObject.GObject):
             self.map.set_scale( self.map.get_scale() / 1.1 )
 
         caller.callRedraw(self)
+
 
 class MapCanvas(Gtk.DrawingArea, MapEngine.MapEngine):
     """ """
@@ -139,6 +140,6 @@ class MapCanvas(Gtk.DrawingArea, MapEngine.MapEngine):
     def draw(self, caller, cr):
         """ """
         ## Set match size matches widget size
-        self.set_size((self.get_allocated_width(), self.get_allocated_height()))
+        self.set_size(self.get_allocated_width(), self.get_allocated_height()) 
         ## Call MapEngine render method on Cario context
         self.render(cr)
