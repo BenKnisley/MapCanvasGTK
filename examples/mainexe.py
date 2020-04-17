@@ -12,7 +12,8 @@ gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, Gdk, Gio, GObject
 
 ## Import MapWidget
-from MapView import MapView
+from MapCanvasGTK import MapCanvas
+from MapEngine import CairoPainter as renderer
 from MapEngine import VectorLayer
 
 
@@ -51,25 +52,25 @@ class MainWindow(Gtk.Window):
         self.set_border_width(0)
 
         ## Create widgets
-        self.map = MapView()
+        self.map = MapCanvas()
 
         #self.map.set_projection("EPSG:4326")
-        self.map.set_projection("EPSG:3857")
-        #self.map.set_projection("EPSG:32023")
+        #self.map.set_projection("EPSG:3857")
         #self.map.set_projection("+proj=aea +lat_1=29.5 +lat_2=45.5 +lat_0=37.5 +lon_0=-96 +x_0=0 +y_0=0 +datum=NAD83 +units=m +no_defs")
-        self.map.set_location((-83.0, 40.0))
-        self.map.set_scale(40000)
+        self.map.set_projection("EPSG:32023")
+        self.map.set_location(40.0,-83.0)
+        self.map.set_scale(1000)
         self.map.set_background_color('black')
 
         ## Create map layers
 
 
-        WorldCountries = VectorLayer.from_shapefile("./data/WorldCountries.shp")
+        #WorldCountries = VectorLayer.from_shapefile("./data/WorldCountries.shp")
         #self.map.add_layer(WorldCountries)
-        self.map.add_layer(WorldCountries)
+        #self.map.add_layer(WorldCountries)
 
-        #OhioCounties = VectorLayer.from_shapefile("./data/OhioCounties.shp")
-        #self.map.add_layer(OhioCounties)
+        OhioCounties = VectorLayer.from_shapefile("/home/ben/Geography/Data/Ohio Counties/OhioCounties.shp")
+        self.map.add_layer(OhioCounties)
         #self.map.add_layer(ohio_roads)
 
         #ohio_roads = VectorLayer.from_shapefile("./data/ohio_roads.shp")

@@ -142,4 +142,4 @@ class MapCanvas(Gtk.DrawingArea, MapEngine.MapEngine):
         ## Set match size matches widget size
         self.set_size(self.get_allocated_width(), self.get_allocated_height()) 
         ## Call MapEngine render method on Cario context
-        self.render(cr)
+        self.render(MapEngine.CairoPainter, cr)

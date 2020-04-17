@@ -15,9 +15,8 @@ setup(
     license = "MIT",
     keywords = "GIS GTK map MapEngine GUI",
     #install_requires=['PyGObject', 'MapEngine'],
-    #install_requires=['PyGObject'],    
-    packages=["MapCanvas",],
-    package_dir={'MapCanvas':'src'},
+    #install_requires=['PyGObject'],
+    packages=["MapCanvasGTK",],
     long_description="...",
     classifiers=[
         "Development Status :: 1 - Planning",
