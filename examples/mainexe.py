@@ -69,7 +69,7 @@ class MainWindow(Gtk.Window):
         #self.map.add_layer(WorldCountries)
         #self.map.add_layer(WorldCountries)
 
-        OhioCounties = VectorLayer.from_shapefile("/home/ben/Geography/Data/Ohio Counties/OhioCounties.shp")
+        OhioCounties = VectorLayer.from_shapefile("./data/OhioCounties.shp")
         self.map.add_layer(OhioCounties)
         #self.map.add_layer(ohio_roads)
 
