@@ -13,8 +13,8 @@ from gi.repository import Gtk, Gdk, Gio, GObject
 
 ## Import MapWidget
 from MapCanvasGTK import MapCanvas
-from MapEngine import CairoPainter as renderer
-from MapEngine import VectorLayer
+from PyMapKit import CairoPainter as renderer
+from PyMapKit import VectorLayer
 
 
 class MapViewerApplication(Gtk.Application):

@@ -9,10 +9,10 @@ Function: A Gtk Widget that provides a map.
 ## Import PyGtk modules
 import gi
 gi.require_version('Gtk', '3.0')
-from gi.repository import Gtk, Gdk, Gio, GObject
+from gi.repository import Gtk, Gdk, Gio, GObject, GLib
 
-## Import MapEngine modules
-import MapEngine
+## Import PyMapKit modules
+import PyMapKit
 
 
 
@@ -102,14 +102,14 @@ class _ToolController(GObject.GObject):
         caller.callRedraw(self)
 
 
-class MapCanvas(Gtk.DrawingArea, MapEngine.MapEngine):
+class MapCanvas(Gtk.DrawingArea, PyMapKit.MapEngine):
     """ """
     def __init__(self):
         """ """
         ## Implement inheritance from GObject, DrawingArea, and MapEngine.
         GObject.GObject.__init__(self)
         Gtk.DrawingArea.__init__(self)
-        MapEngine.MapEngine.__init__(self)
+        PyMapKit.MapEngine.__init__(self)
 
         ## Create ToolController Object
         self.tools = _ToolController(self)
@@ -130,6 +130,19 @@ class MapCanvas(Gtk.DrawingArea, MapEngine.MapEngine):
         self.connect("motion-notify-event", self.tools.mouseDrag)
         self.connect("draw", self.draw)
 
+
+    def add_layer(self, new_map_layer, index=-1):
+        
+        ## Call new_map_layer activate function
+        new_map_layer._activate(self)
+
+        ## Add layer to layer_list
+        if index == -1:
+            self._layer_list.insert(len(self._layer_list), new_map_layer)
+        else:
+            self._layer_list.insert(index, new_map_layer)
+
+
     def startup(self, caller, data):
         pass
 
@@ -142,4 +155,8 @@ class MapCanvas(Gtk.DrawingArea, MapEngine.MapEngine):
         ## Set match size matches widget size
         self.set_size(self.get_allocated_width(), self.get_allocated_height()) 
         ## Call MapEngine render method on Cario context
-        self.render(MapEngine.CairoPainter, cr)
+        self.render(PyMapKit.CairoPainter, cr)
+
+        if any(map(lambda l: l.need_redrawn(), self._layer_list)):
+            GLib.timeout_add(1000, self.callRedraw, self)
+            self.callRedraw(self)
