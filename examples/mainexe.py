@@ -15,6 +15,7 @@ from gi.repository import Gtk, Gdk, Gio, GObject
 from MapCanvasGTK import MapCanvas
 from PyMapKit import CairoPainter as renderer
 from PyMapKit import VectorLayer
+from PyMapKit import TileLayer
 
 
 class MapViewerApplication(Gtk.Application):
@@ -57,7 +58,8 @@ class MainWindow(Gtk.Window):
         #self.map.set_projection("EPSG:4326")
         #self.map.set_projection("EPSG:3857")
         #self.map.set_projection("+proj=aea +lat_1=29.5 +lat_2=45.5 +lat_0=37.5 +lon_0=-96 +x_0=0 +y_0=0 +datum=NAD83 +units=m +no_defs")
-        self.map.set_projection("EPSG:32023")
+        #self.map.set_projection("EPSG:32023")
+        self.map.set_projection("EPSG:3785")
         self.map.set_location(40.0,-83.0)
         self.map.set_scale(1000)
         self.map.set_background_color('black')
@@ -69,8 +71,38 @@ class MainWindow(Gtk.Window):
         #self.map.add_layer(WorldCountries)
         #self.map.add_layer(WorldCountries)
 
+        self.map.add_layer( TileLayer() )
+
+        OhioCounties = VectorLayer.from_shapefile("./data/OhioCounties.shp")
+        
+        OhioCounties.set_opacity(0.5)
+
+        self.map.add_layer(OhioCounties)
+        '''
+        OhioCounties = VectorLayer.from_shapefile("./data/OhioCounties.shp")
+        self.map.add_layer(OhioCounties)        
+        
         OhioCounties = VectorLayer.from_shapefile("./data/OhioCounties.shp")
         self.map.add_layer(OhioCounties)
+        
+        OhioCounties = VectorLayer.from_shapefile("./data/OhioCounties.shp")
+        self.map.add_layer(OhioCounties)
+
+        OhioCounties = VectorLayer.from_shapefile("./data/OhioCounties.shp")
+        self.map.add_layer(OhioCounties)
+        
+        OhioCounties = VectorLayer.from_shapefile("./data/OhioCounties.shp")
+        self.map.add_layer(OhioCounties)        
+        
+        OhioCounties = VectorLayer.from_shapefile("./data/OhioCounties.shp")
+        self.map.add_layer(OhioCounties)
+        
+        OhioCounties = VectorLayer.from_shapefile("./data/OhioCounties.shp")
+        self.map.add_layer(OhioCounties)
+        #'''
+
+        
+
         #self.map.add_layer(ohio_roads)
 
         #ohio_roads = VectorLayer.from_shapefile("./data/ohio_roads.shp")
