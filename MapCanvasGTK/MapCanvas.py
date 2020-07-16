@@ -175,7 +175,7 @@ class MapCanvas(Gtk.DrawingArea, PyMapKit.MapEngine):
         Gtk.DrawingArea.__init__(self)
         PyMapKit.MapEngine.__init__(self)
 
-        ## Background rendering thread varibles
+        ## Background rendering thread variables
         self.rendered_map = None
         self.render_thread = None
         self.is_rendering = False
@@ -232,7 +232,7 @@ class MapCanvas(Gtk.DrawingArea, PyMapKit.MapEngine):
         #time.sleep(1)
         temp_surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, self.get_allocated_width(), self.get_allocated_height())
         cr = cairo.Context(temp_surface)
-        self.render(PyMapKit.CairoPainter, cr)
+        self.render(cr)
 
         if self.map_updated == False:
             self.rendered_map = temp_surface
@@ -255,7 +255,7 @@ class MapCanvas(Gtk.DrawingArea, PyMapKit.MapEngine):
         ## Set match size matches widget size
         self.set_size(self.get_allocated_width(), self.get_allocated_height())
 
-        PyMapKit.CairoPainter.draw_background(cr, self._background_color)
+        self.renderer.draw_background(cr, self._background_color)
         
         ## If
         if self.rendered_map == None:
