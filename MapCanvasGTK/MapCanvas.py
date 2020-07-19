@@ -166,14 +166,14 @@ class _ToolController(GObject.GObject):
         caller.call_redraw(self)
 
 
-class MapCanvas(Gtk.DrawingArea, PyMapKit.MapEngine):
+class MapCanvas(Gtk.DrawingArea, PyMapKit.Map):
     """ """
     def __init__(self):
         """ """
-        ## Implement inheritance from GObject, DrawingArea, and MapEngine
+        ## Implement inheritance from GObject, DrawingArea, and PyMapKit.Map
         GObject.GObject.__init__(self)
         Gtk.DrawingArea.__init__(self)
-        PyMapKit.MapEngine.__init__(self)
+        PyMapKit.Map.__init__(self)
 
         ## Background rendering thread variables
         self.rendered_map = None
