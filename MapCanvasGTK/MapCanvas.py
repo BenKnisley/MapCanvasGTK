@@ -20,6 +20,13 @@ import PyMapKit
 
 
 
+
+class UI_Tool(GObject.GObject):
+    def __init__(self):
+        pass
+
+
+
 class _ToolController(GObject.GObject):
     """
     Class to receive signals & abstract higher level functions.
@@ -76,9 +83,10 @@ class _ToolController(GObject.GObject):
             cenX, cenY = self.map.get_canvas_center()
             orgnX, orgnY = self.LDragPOS
 
-            ## Calulate new pixel point from drag distance
+            ## Calculate new pixel point from drag distance
             newPixPoint = ( (cenX + (orgnX - move.x)), (cenY + -(orgnY - move.y)) )
 
+            self.map.emit('left-drag', (orgnX - move.x), (orgnY - move.y))
 
             temp_surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, self.map.width, self.map.height)
             cr = cairo.Context(temp_surface)
@@ -102,12 +110,16 @@ class _ToolController(GObject.GObject):
             ## Set drag orgin point
             self.LDragPOS = (move.x, move.y)
 
-
         if self.midHeld:
             pass
 
         if self.rightHeld:
             pass
+
+
+    def left_drag_slot(self, caller, x, y):
+        pass
+
 
     def scroll(self, caller, scroll):
         """ """
@@ -165,7 +177,6 @@ class _ToolController(GObject.GObject):
 
         caller.call_redraw(self)
 
-
 class MapCanvas(Gtk.DrawingArea, PyMapKit.Map):
     """ """
     def __init__(self):
@@ -175,11 +186,16 @@ class MapCanvas(Gtk.DrawingArea, PyMapKit.Map):
         Gtk.DrawingArea.__init__(self)
         PyMapKit.Map.__init__(self)
 
+        GObject.signal_new("layer-added", MapCanvas, GObject.SIGNAL_RUN_FIRST, None, (str,)) ## self.emit('layer-added', "hello")
+
+        GObject.signal_new("left-click", MapCanvas, GObject.SIGNAL_RUN_FIRST, None, (str,)) ## self.emit('layer-added', "hello")
+        GObject.signal_new("left-drag", MapCanvas, GObject.SIGNAL_RUN_FIRST, None, (int, int,)) ## self.emit('layer-added', "hello")
+
         ## Background rendering thread variables
         self.rendered_map = None
         self.render_thread = None
         self.is_rendering = False
-        self.map_updated = False
+        self.map_updated = True
 
         ## Create ToolController Object
         self.tools = _ToolController(self)
@@ -196,12 +212,11 @@ class MapCanvas(Gtk.DrawingArea, PyMapKit.Map):
         self.connect("configure_event", self.startup)
         self.connect("scroll-event", self.tools.scroll)
         self.connect("draw", self.draw)
+        self.connect("left-drag", self.ping)
         
         self.connect("button-press-event", self.tools.buttonPress)
         self.connect("button-release-event", self.tools.buttonRelease)
         self.connect("motion-notify-event", self.tools.mouseDrag)
-
-
 
     def add_layer(self, new_map_layer, index=-1):
         """ """
@@ -213,42 +228,51 @@ class MapCanvas(Gtk.DrawingArea, PyMapKit.Map):
             self._layer_list.insert(len(self._layer_list), new_map_layer)
         else:
             self._layer_list.insert(index, new_map_layer)
+        
+        self.map_updated = True
+        self.call_redraw(self)
+
+    def ping(self, caller, x, y):
+        print("Left Drag", x, y)
 
 
     def startup(self, caller, data):
         ## When widget is first created: queue rendering
-        GObject.idle_add(self.render_map_in_thread)
+        self.call_map_render(self)
 
-    def call_redraw(self, caller):
-        """ Causes canvas to redraw self """
-        self.queue_draw()
+    def call_map_render(self, caller):
+        GObject.idle_add(self.start_render_thread)
+
+    def start_render_thread(self):
+        """ Opens render_map in a thread """ 
+        if self.map_updated:
+            if not self.is_rendering:
+                self.render_thread = threading.Thread(target=self.render_map)
+                self.render_thread.setDaemon(False)
+                self.render_thread.start()
 
     def render_map(self):
-        """
-        """
+        """ Renders map to self.rendered_map """
         self.map_updated = False
         self.is_rendering = True
 
-        #time.sleep(1)
         temp_surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, self.get_allocated_width(), self.get_allocated_height())
         cr = cairo.Context(temp_surface)
         self.render(cr)
 
         if self.map_updated == False:
             self.rendered_map = temp_surface
+        else:
+            self.render_map()
 
         self.map_updated = False
         self.is_rendering = False
 
-
         self.call_redraw(self)
     
-    def render_map_in_thread(self):
-        if self.is_rendering == False:
-            self.render_thread = threading.Thread(target=self.render_map)
-            self.render_thread.setDaemon(True)
-            self.render_thread.start()
-                
+    def call_redraw(self, caller):
+        """ Asks canvas to redraw itself """
+        self.queue_draw()
 
     def draw(self, caller, cr):
         """ """
@@ -258,17 +282,12 @@ class MapCanvas(Gtk.DrawingArea, PyMapKit.Map):
         self.renderer.draw_background(cr, self._background_color)
         
         ## If
-        if self.rendered_map == None:
-            GObject.idle_add(self.render_map_in_thread)
-            return
+        if self.rendered_map:
+            cr.set_source_surface(self.rendered_map)
+            cr.paint()
+            self.render_thread.join(0)
 
-        
-        cr.set_source_surface(self.rendered_map)
-        cr.paint()
+
         
         ## Render map in another thread whenever GTK feels like it
-        GObject.idle_add(self.render_map_in_thread)
-
-        ## Join thread whenever done
-        if isinstance(self.render_thread, threading.Thread):
-            self.render_thread.join(0) ## 0 means no time out
+        self.call_map_render(self)
