@@ -18,13 +18,126 @@ from gi.repository import Gtk, Gdk, Gio, GObject, GLib
 ## Import PyMapKit module
 import PyMapKit
 
+import time
 
 
 
 class UI_Tool(GObject.GObject):
     def __init__(self):
-        pass
+        self.parent = None
 
+        self.draw_list = []
+
+    def activate(self, parent):
+        self.parent = parent
+        #self.parent.connect("left-click", self.left_click)
+        #elf.parent.connect("right-click", self.select_at_click)
+        self.parent.connect("double-click", self.select_at_click)
+        self.parent.connect("middle-click", self.middle_click)
+        self.parent.connect("left-drag-update", self.left_drag)
+        self.parent.connect("scroll-up", self.scroll_up)
+        self.parent.connect("scroll-down", self.scroll_down)
+
+    def left_drag(self, caller, x_change, y_change):
+        """ """
+        ## Calculate new pixel point from drag distance
+        temp_surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, self.parent.width, self.parent.height)
+        cr = cairo.Context(temp_surface)
+
+        cr.save()
+        cr.translate(int(x_change), int(y_change))
+        cr.set_source_surface(self.parent.rendered_map)
+        cr.paint()
+        cr.restore()
+
+        center_x, center_y = self.parent.get_canvas_center()
+        projx, projy = self.parent.pix2proj((center_x - x_change), (center_y + y_change))
+        self.parent.set_proj_coordinate(projx, projy)
+
+        self.parent.rendered_map = temp_surface
+        ## Call redraw
+        self.parent.call_redraw(self)
+        self.parent.map_updated = True
+
+    def scroll_up(self, caller):
+        ##
+        temp_surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, self.parent.width, self.parent.height)
+        cr = cairo.Context(temp_surface)
+
+        cr.save()
+
+        x_w = -((self.parent.width * 1.1) - self.parent.width) / 2
+        x_h = -((self.parent.height * 1.1) - self.parent.height) / 2
+
+
+        cr.translate(x_w, x_h)
+        cr.scale(1.1, 1.1)
+
+        cr.set_source_surface(self.parent.rendered_map)
+        cr.paint()
+        cr.restore()
+
+        self.parent.rendered_map = temp_surface
+        ## Call redraw
+        self.parent.call_redraw(self)
+
+        self.parent.map_updated = True
+        self.parent.set_scale( self.parent.get_scale() / 1.1 )
+
+        ##
+        self.parent.call_redraw(self)
+
+    def scroll_down(self, caller):
+        temp_surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, self.parent.width, self.parent.height)
+        cr = cairo.Context(temp_surface)
+
+        cr.save()
+
+        x_w = -((self.parent.width / 1.1) - self.parent.width) / 2
+        x_h = -((self.parent.height / 1.1) - self.parent.height) / 2
+
+
+        cr.translate(int(x_w), int(x_h))
+        cr.scale(1/1.1, 1/1.1)
+
+        cr.set_source_surface(self.parent.rendered_map)
+        cr.paint()
+        cr.restore()
+
+        self.parent.rendered_map = temp_surface
+        ## Call redraw
+        self.parent.call_redraw(self)
+
+        self.parent.map_updated = True
+        self.parent.set_scale( self.parent.get_scale() * 1.1 )
+        
+        ##
+        self.parent.call_redraw(self)
+    
+    def middle_click(self, caller, x,y):
+        self.draw_list = []
+        self.parent.call_redraw(self)
+
+
+    def select_at_click(self, caller, x, y):
+        """ """
+        proj_x, proj_y = self.parent.pix2proj(x, self.parent.height - y)
+
+        layer = self.parent.get_layer(0)
+        selected_features = layer.point_select(proj_x, proj_y)
+
+        for feature in selected_features:
+            if feature not in self.draw_list:
+                self.draw_list.append(feature)
+
+        ## Redraw widget with selected features highlighted
+        self.parent.call_redraw(self)
+
+
+    def draw(self, cr):
+        """ """
+        for f in self.draw_list:
+            f.draw(self.parent.get_layer(0), self.parent.renderer, cr, color_over_ride='yellow')
 
 
 class _ToolController(GObject.GObject):
@@ -38,144 +151,121 @@ class _ToolController(GObject.GObject):
         self.map = map
 
         ## Define public mouse button trackers
-        self.leftHeld = False
-        self.LDragPOS = (None, None)
+        self.click_time = 0
+        self.left_active = False
+        self.left_init_position = (None, None)
+        self.left_updated_position = (None, None)
+        
+        self.middle_active = False
+        self.middle_init_position = (None, None)
+        self.middle_updated_position = (None, None)
 
-        self.midHeld = False
-        self.MDragPOS = (None, None)
-
-        self.rightHeld = False
-        self.RDragPOS = (None, None)
+        self.right_active = False
+        self.right_init_position = (None, None)
+        self.right_updated_position = (None, None)
 
     def buttonPress(self, caller, click):
         if click.button == 1: ## Left click
-            self.leftHeld = True
-            self.LDragPOS = (click.x, click.y)
+            self.left_active = True
+            self.left_init_position = (click.x, click.y)
 
         elif click.button == 2: ## Middle click
-            self.midHeld = True
-            self.MDragPOS = (click.x, click.y)
+            self.middle_active = True
+            self.middle_init_position = (click.x, click.y)
 
         else: ## Right click
-            self.rightHeld = True
-            self.RDragPOS = (click.x, click.y)
+            self.right_active = True
+            self.right_init_position = (click.x, click.y)
 
     def buttonRelease(self, caller, click):
         if click.button == 1: ## Left click
-            self.leftHeld = False
-            self.LDragPOS = (None, None)
-            #print( self.map.getPOI() )
+            ## Do stuff, send signals
+            if (time.time() - self.click_time) < 0.25:
+                self.map.emit('double-click', int(click.x), int(click.y))
+            elif (click.x, click.y) == self.left_init_position:
+                self.map.emit('left-click', int(click.x), int(click.y))
+            else:
+                self.map.emit('left-drag-end', int(click.x), int(click.y))
+
+            ## Reset trackers
+            self.click_time = time.time()
+            self.left_active = False
+            self.left_init_position = (None, None)
+            self.left_updated_position = (None, None)
 
         elif click.button == 2: ## Middle click
-            self.midHeld = False
-            self.MDragPOS = (None, None)
-            self.map.call_redraw(self)
+            ## Do Stuff
+            if (click.x, click.y) == self.middle_init_position:
+                self.map.emit('middle-click', int(click.x), int(click.y))
+            else:
+                self.map.emit('middle-drag-end', int(click.x), int(click.y))
+            ## Reset
+            self.middle_active = False
+            self.middle_init_position = (None, None)
+            self.middle_updated_position = (None, None)
 
         else: ## Right click
-            self.rightHeld = False
-            self.RDragPOS = (None, None)
-
-            ##
+            ## Do Stuff
+            if (click.x, click.y) == self.right_init_position:
+                self.map.emit('right-click', int(click.x), int(click.y))
+            else:
+                self.map.emit('right-drag-end', int(click.x), int(click.y))
+            ## Reset
+            self.right_active = False
+            self.right_init_position = (None, None)
+            self.right_updated_position = (None, None)
 
     def mouseDrag(self, caller, move):
-        if self.leftHeld:
-            ## Unpack Points
-            cenX, cenY = self.map.get_canvas_center()
-            orgnX, orgnY = self.LDragPOS
+        if self.left_active:
 
-            ## Calculate new pixel point from drag distance
-            newPixPoint = ( (cenX + (orgnX - move.x)), (cenY + -(orgnY - move.y)) )
+            if self.left_updated_position == (None, None):
+                self.map.emit('left-drag-start', int(move.x), int(move.y))
+                self.left_updated_position = self.left_init_position
+            
 
-            self.map.emit('left-drag', (orgnX - move.x), (orgnY - move.y))
+            init_x, init_y = self.left_updated_position
 
-            temp_surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, self.map.width, self.map.height)
-            cr = cairo.Context(temp_surface)
+            self.map.emit('left-drag-update', move.x-init_x, move.y-init_y)
 
-            cr.save()
-            cr.translate(int(move.x - orgnX), int(move.y - orgnY))
-            cr.set_source_surface(self.map.rendered_map)
-            cr.paint()
-            cr.restore()
-
-            self.map.rendered_map = temp_surface
-            ## Call redraw
-            caller.call_redraw(self)
-
-            ## Calulate new map POI
-
-            projx, projy = self.map.pix2proj(newPixPoint[0], newPixPoint[1])
-            self.map.set_proj_coordinate(projx, projy)
-            self.map.map_updated = True
-
-            ## Set drag orgin point
-            self.LDragPOS = (move.x, move.y)
-
-        if self.midHeld:
-            pass
-
-        if self.rightHeld:
-            pass
+            ## Set drag origin point
+            self.left_updated_position = (move.x, move.y)
 
 
-    def left_drag_slot(self, caller, x, y):
-        pass
+        if self.middle_active:
+            if self.middle_updated_position == (None, None):
+                self.map.emit('middle-drag-start', int(move.x), int(move.y))
+                self.middle_updated_position = self.middle_init_position
+            
 
+            init_x, init_y = self.middle_updated_position
+
+            self.map.emit('middle-drag-update', move.x-init_x, move.y-init_y)
+
+            ## Set drag origin point
+            self.middle_updated_position = (move.x, move.y)
+
+        if self.right_active:
+            if self.right_updated_position == (None, None):
+                self.map.emit('right-drag-start', int(move.x), int(move.y))
+                self.right_updated_position = self.right_init_position
+            
+
+            init_x, init_y = self.right_updated_position
+
+            self.map.emit('right-drag-update', move.x-init_x, move.y-init_y)
+
+            ## Set drag origin point
+            self.right_updated_position = (move.x, move.y)
 
     def scroll(self, caller, scroll):
         """ """
         if int(scroll.direction) == 0:
-            
-            ##
-            temp_surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, self.map.width, self.map.height)
-            cr = cairo.Context(temp_surface)
-
-            cr.save()
-
-            x_w = -((self.map.width * 1.1) - self.map.width) / 2
-            x_h = -((self.map.height * 1.1) - self.map.height) / 2
-
-
-            cr.translate(x_w, x_h)
-            cr.scale(1.1, 1.1)
-
-            cr.set_source_surface(self.map.rendered_map)
-            cr.paint()
-            cr.restore()
-
-            self.map.rendered_map = temp_surface
-            ## Call redraw
-            caller.call_redraw(self)
-
-            self.map.map_updated = True
-            self.map.set_scale( self.map.get_scale() / 1.1 )
-            ##
-
-
+            self.map.emit("scroll-up")
         else:
-            temp_surface = cairo.ImageSurface(cairo.FORMAT_ARGB32, self.map.width, self.map.height)
-            cr = cairo.Context(temp_surface)
-
-            cr.save()
-
-            x_w = -((self.map.width / 1.1) - self.map.width) / 2
-            x_h = -((self.map.height / 1.1) - self.map.height) / 2
+            self.map.emit("scroll-down")
 
 
-            cr.translate(int(x_w), int(x_h))
-            cr.scale(1/1.1, 1/1.1)
 
-            cr.set_source_surface(self.map.rendered_map)
-            cr.paint()
-            cr.restore()
-
-            self.map.rendered_map = temp_surface
-            ## Call redraw
-            caller.call_redraw(self)
-
-            self.map.map_updated = True
-            self.map.set_scale( self.map.get_scale() * 1.1 )
-
-        caller.call_redraw(self)
 
 class MapCanvas(Gtk.DrawingArea, PyMapKit.Map):
     """ """
@@ -186,10 +276,30 @@ class MapCanvas(Gtk.DrawingArea, PyMapKit.Map):
         Gtk.DrawingArea.__init__(self)
         PyMapKit.Map.__init__(self)
 
-        GObject.signal_new("layer-added", MapCanvas, GObject.SIGNAL_RUN_FIRST, None, (str,)) ## self.emit('layer-added', "hello")
+        self.set_background_color('black')
 
-        GObject.signal_new("left-click", MapCanvas, GObject.SIGNAL_RUN_FIRST, None, (str,)) ## self.emit('layer-added', "hello")
-        GObject.signal_new("left-drag", MapCanvas, GObject.SIGNAL_RUN_FIRST, None, (int, int,)) ## self.emit('layer-added', "hello")
+        ## Create custom signals
+        GObject.signal_new("layer-added", MapCanvas, GObject.SIGNAL_RUN_FIRST, None, (str,)) 
+
+        GObject.signal_new("scroll-up", MapCanvas, GObject.SIGNAL_RUN_FIRST, None, ()) 
+        GObject.signal_new("scroll-down", MapCanvas, GObject.SIGNAL_RUN_FIRST, None, ()) 
+
+        GObject.signal_new("left-click", MapCanvas, GObject.SIGNAL_RUN_FIRST, None, (int, int)) 
+        GObject.signal_new("double-click", MapCanvas, GObject.SIGNAL_RUN_FIRST, None, (int, int)) 
+        GObject.signal_new("left-drag-start", MapCanvas, GObject.SIGNAL_RUN_FIRST, None, (int, int,)) 
+        GObject.signal_new("left-drag-update", MapCanvas, GObject.SIGNAL_RUN_FIRST, None, (int, int,)) 
+        GObject.signal_new("left-drag-end", MapCanvas, GObject.SIGNAL_RUN_FIRST, None, (int, int,)) 
+
+        GObject.signal_new("middle-click", MapCanvas, GObject.SIGNAL_RUN_FIRST, None, (int, int)) 
+        GObject.signal_new("middle-drag-start", MapCanvas, GObject.SIGNAL_RUN_FIRST, None, (int, int,)) 
+        GObject.signal_new("middle-drag-update", MapCanvas, GObject.SIGNAL_RUN_FIRST, None, (int, int,)) 
+        GObject.signal_new("middle-drag-end", MapCanvas, GObject.SIGNAL_RUN_FIRST, None, (int, int,)) 
+
+        GObject.signal_new("right-click", MapCanvas, GObject.SIGNAL_RUN_FIRST, None, (int, int)) 
+        GObject.signal_new("right-drag-start", MapCanvas, GObject.SIGNAL_RUN_FIRST, None, (int, int,)) 
+        GObject.signal_new("right-drag-update", MapCanvas, GObject.SIGNAL_RUN_FIRST, None, (int, int,)) 
+        GObject.signal_new("right-drag-end", MapCanvas, GObject.SIGNAL_RUN_FIRST, None, (int, int,)) 
+
 
         ## Background rendering thread variables
         self.rendered_map = None
@@ -199,6 +309,11 @@ class MapCanvas(Gtk.DrawingArea, PyMapKit.Map):
 
         ## Create ToolController Object
         self.tools = _ToolController(self)
+
+        
+        self.tool = UI_Tool()
+        self.tool.activate(self)
+        
 
         ## Add capability to detect mouse events
         self.add_events(Gdk.EventMask.BUTTON_PRESS_MASK)
@@ -212,7 +327,6 @@ class MapCanvas(Gtk.DrawingArea, PyMapKit.Map):
         self.connect("configure_event", self.startup)
         self.connect("scroll-event", self.tools.scroll)
         self.connect("draw", self.draw)
-        self.connect("left-drag", self.ping)
         
         self.connect("button-press-event", self.tools.buttonPress)
         self.connect("button-release-event", self.tools.buttonRelease)
@@ -231,10 +345,6 @@ class MapCanvas(Gtk.DrawingArea, PyMapKit.Map):
         
         self.map_updated = True
         self.call_redraw(self)
-
-    def ping(self, caller, x, y):
-        print("Left Drag", x, y)
-
 
     def startup(self, caller, data):
         ## When widget is first created: queue rendering
@@ -287,7 +397,7 @@ class MapCanvas(Gtk.DrawingArea, PyMapKit.Map):
             cr.paint()
             self.render_thread.join(0)
 
-
+        self.tool.draw(cr)
         
         ## Render map in another thread whenever GTK feels like it
         self.call_map_render(self)
