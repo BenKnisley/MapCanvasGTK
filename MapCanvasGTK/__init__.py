@@ -3,7 +3,7 @@
 MapEngine - A module for rendering maps
 """
 from __future__ import absolute_import
-from .MapCanvas import MapCanvas
+from .MapCanvas import MapCanvas, UITool, SelectTool
 
 __author__ = "Ben Knisley (benknisley@gmail.com)"
 __license__ = "MIT"

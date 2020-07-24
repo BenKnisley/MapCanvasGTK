@@ -22,18 +22,88 @@ import time
 
 
 
-class UI_Tool(GObject.GObject):
+
+class SelectTool(GObject.GObject):
+    def __init__(self):
+        self.parent = None
+        self.connection_list = []
+        self.select_box_active = False
+        self.selected = []
+
+    def activate(self, parent):
+        ## Set parent object
+        self.parent = parent
+        ## Setup connection, keeping the reference to each in connection_list
+        self.connection_list.append( self.parent.connect("double-click", self.select_at_click) )
+        self.connection_list.append( self.parent.connect("middle-click", self.deselect) )
+        self.connection_list.append( self.parent.connect("middle-drag-start", self.select_box_start) )
+        self.connection_list.append( self.parent.connect("middle-drag-update", self.select_box_update) )
+        self.connection_list.append( self.parent.connect("middle-drag-end", self.select_box_end) )
+
+    def deactivate(self):
+        ## Reset tool vars
+        self.select_box_active = False
+        self.selected = []
+        ## Disconnect all connection
+        for connect_id in self.connection_list:
+            self.parent.disconnect(connect_id)
+        ## Remove parent
+        self.parent = None
+
+    def select_at_click(self, caller, x, y):
+        """ """
+        proj_x, proj_y = self.parent.pix2proj(x, self.parent.height - y)
+
+        layer = self.parent.get_layer( self.parent.active_layer_index )
+        selected_features = layer.point_select(proj_x, proj_y)
+
+        for feature in selected_features:
+            if feature not in self.selected:
+                self.selected.append(feature)
+
+        ## Redraw widget with selected features highlighted
+        self.parent.call_redraw(self)
+    
+    def select_box_start(self, caller, x, y):
+        self.select_box_active = True
+        self.select_box_start_coord = (x, y)
+        self.select_box_size = (0, 0)
+
+    def select_box_update(self, caller, x, y):
+        if self.select_box_active:
+            self.select_box_size = self.select_box_size[0] + x, self.select_box_size[1] + y
+            self.parent.call_redraw(self)
+
+    def select_box_end(self, caller, x, y):
+        self.select_box_active = False
+        self.parent.call_redraw(self)
+
+    def deselect(self, caller, x, y):
+        self.selected = []
+        self.parent.call_redraw(self)
+
+    def draw(self, cr):
+        """ """
+        if self.select_box_active:
+            print('drawing')
+            print( *self.select_box_start_coord, *self.select_box_size )
+            cr.rectangle(*self.select_box_start_coord, *self.select_box_size)
+            cr.set_source_rgba(0, 1, 1, 0.25)
+            cr.fill_preserve()
+
+            cr.set_source_rgba(0, 1, 1, 1)
+            cr.set_line_width(3)
+            cr.stroke()
+
+        for f in self.selected:
+            f.draw(self.parent.get_layer( self.parent.active_layer_index ), self.parent.renderer, cr, color_over_ride='yellow')
+
+class UITool(GObject.GObject):
     def __init__(self):
         self.parent = None
 
-        self.draw_list = []
-
     def activate(self, parent):
         self.parent = parent
-        #self.parent.connect("left-click", self.left_click)
-        #elf.parent.connect("right-click", self.select_at_click)
-        self.parent.connect("double-click", self.select_at_click)
-        self.parent.connect("middle-click", self.middle_click)
         self.parent.connect("left-drag-update", self.left_drag)
         self.parent.connect("scroll-up", self.scroll_up)
         self.parent.connect("scroll-down", self.scroll_down)
@@ -115,40 +185,64 @@ class UI_Tool(GObject.GObject):
         self.parent.call_redraw(self)
     
     def middle_click(self, caller, x,y):
-        self.draw_list = []
+        self.selected = []
         self.parent.call_redraw(self)
-
-
-    def select_at_click(self, caller, x, y):
-        """ """
-        proj_x, proj_y = self.parent.pix2proj(x, self.parent.height - y)
-
-        layer = self.parent.get_layer(0)
-        selected_features = layer.point_select(proj_x, proj_y)
-
-        for feature in selected_features:
-            if feature not in self.draw_list:
-                self.draw_list.append(feature)
-
-        ## Redraw widget with selected features highlighted
-        self.parent.call_redraw(self)
-
 
     def draw(self, cr):
         """ """
-        for f in self.draw_list:
-            f.draw(self.parent.get_layer(0), self.parent.renderer, cr, color_over_ride='yellow')
+        pass
 
 
-class _ToolController(GObject.GObject):
+class _SignalManager(GObject.GObject):
     """
     Class to receive signals & abstract higher level functions.
     """
-    def __init__(self, map):
+    def __init__(self, parent):
         """ """
         GObject.GObject.__init__(self)
 
-        self.map = map
+        self.map = parent
+
+        ## Add capability to detect mouse events
+        self.map.add_events(Gdk.EventMask.BUTTON_PRESS_MASK)
+        self.map.add_events(Gdk.EventMask.BUTTON_RELEASE_MASK)
+        self.map.add_events(Gdk.EventMask.BUTTON1_MOTION_MASK)
+        self.map.add_events(Gdk.EventMask.BUTTON2_MOTION_MASK)
+        self.map.add_events(Gdk.EventMask.BUTTON3_MOTION_MASK)
+        self.map.add_events(Gdk.EventMask.SCROLL_MASK)
+
+
+        ## Create custom signals
+        GObject.signal_new("layer-added", self.map, GObject.SIGNAL_RUN_FIRST, None, (object,)) 
+
+        GObject.signal_new("scroll-up", self.map, GObject.SIGNAL_RUN_FIRST, None, ()) 
+        GObject.signal_new("scroll-down", self.map, GObject.SIGNAL_RUN_FIRST, None, ()) 
+
+        GObject.signal_new("left-click", self.map, GObject.SIGNAL_RUN_FIRST, None, (int, int)) 
+        GObject.signal_new("double-click", self.map, GObject.SIGNAL_RUN_FIRST, None, (int, int)) 
+        GObject.signal_new("left-drag-start", self.map, GObject.SIGNAL_RUN_FIRST, None, (int, int,)) 
+        GObject.signal_new("left-drag-update", self.map, GObject.SIGNAL_RUN_FIRST, None, (int, int,)) 
+        GObject.signal_new("left-drag-end", self.map, GObject.SIGNAL_RUN_FIRST, None, (int, int,)) 
+
+        GObject.signal_new("middle-click", self.map, GObject.SIGNAL_RUN_FIRST, None, (int, int)) 
+        GObject.signal_new("middle-drag-start", self.map, GObject.SIGNAL_RUN_FIRST, None, (int, int,)) 
+        GObject.signal_new("middle-drag-update", self.map, GObject.SIGNAL_RUN_FIRST, None, (int, int,)) 
+        GObject.signal_new("middle-drag-end", self.map, GObject.SIGNAL_RUN_FIRST, None, (int, int,)) 
+
+        GObject.signal_new("right-click", self.map, GObject.SIGNAL_RUN_FIRST, None, (int, int)) 
+        GObject.signal_new("right-drag-start", self.map, GObject.SIGNAL_RUN_FIRST, None, (int, int,)) 
+        GObject.signal_new("right-drag-update", self.map, GObject.SIGNAL_RUN_FIRST, None, (int, int,)) 
+        GObject.signal_new("right-drag-end", self.map, GObject.SIGNAL_RUN_FIRST, None, (int, int,)) 
+
+
+        
+        ## Connect Stuff
+        self.map.connect("scroll-event", self.scroll)
+        self.map.connect("button-press-event", self.buttonPress)
+        self.map.connect("button-release-event", self.buttonRelease)
+        self.map.connect("motion-notify-event", self.mouseDrag)
+
+
 
         ## Define public mouse button trackers
         self.click_time = 0
@@ -265,8 +359,6 @@ class _ToolController(GObject.GObject):
             self.map.emit("scroll-down")
 
 
-
-
 class MapCanvas(Gtk.DrawingArea, PyMapKit.Map):
     """ """
     def __init__(self):
@@ -275,62 +367,29 @@ class MapCanvas(Gtk.DrawingArea, PyMapKit.Map):
         GObject.GObject.__init__(self)
         Gtk.DrawingArea.__init__(self)
         PyMapKit.Map.__init__(self)
+        
+        ## Connect basic widget signals
+        self.connect("configure_event", self.startup)
+        self.connect("draw", self.draw)
+        
+        ## Create _SignalManager Object to handle map signals
+        self.signal_man = _SignalManager(self)
 
+        ## Add a list to hold tools
+        self.tools = []
+
+        ## Set map attributes
         self.set_background_color('black')
 
-        ## Create custom signals
-        GObject.signal_new("layer-added", MapCanvas, GObject.SIGNAL_RUN_FIRST, None, (str,)) 
-
-        GObject.signal_new("scroll-up", MapCanvas, GObject.SIGNAL_RUN_FIRST, None, ()) 
-        GObject.signal_new("scroll-down", MapCanvas, GObject.SIGNAL_RUN_FIRST, None, ()) 
-
-        GObject.signal_new("left-click", MapCanvas, GObject.SIGNAL_RUN_FIRST, None, (int, int)) 
-        GObject.signal_new("double-click", MapCanvas, GObject.SIGNAL_RUN_FIRST, None, (int, int)) 
-        GObject.signal_new("left-drag-start", MapCanvas, GObject.SIGNAL_RUN_FIRST, None, (int, int,)) 
-        GObject.signal_new("left-drag-update", MapCanvas, GObject.SIGNAL_RUN_FIRST, None, (int, int,)) 
-        GObject.signal_new("left-drag-end", MapCanvas, GObject.SIGNAL_RUN_FIRST, None, (int, int,)) 
-
-        GObject.signal_new("middle-click", MapCanvas, GObject.SIGNAL_RUN_FIRST, None, (int, int)) 
-        GObject.signal_new("middle-drag-start", MapCanvas, GObject.SIGNAL_RUN_FIRST, None, (int, int,)) 
-        GObject.signal_new("middle-drag-update", MapCanvas, GObject.SIGNAL_RUN_FIRST, None, (int, int,)) 
-        GObject.signal_new("middle-drag-end", MapCanvas, GObject.SIGNAL_RUN_FIRST, None, (int, int,)) 
-
-        GObject.signal_new("right-click", MapCanvas, GObject.SIGNAL_RUN_FIRST, None, (int, int)) 
-        GObject.signal_new("right-drag-start", MapCanvas, GObject.SIGNAL_RUN_FIRST, None, (int, int,)) 
-        GObject.signal_new("right-drag-update", MapCanvas, GObject.SIGNAL_RUN_FIRST, None, (int, int,)) 
-        GObject.signal_new("right-drag-end", MapCanvas, GObject.SIGNAL_RUN_FIRST, None, (int, int,)) 
-
-
-        ## Background rendering thread variables
+        ## Create background rendering thread variables
         self.rendered_map = None
         self.render_thread = None
         self.is_rendering = False
         self.map_updated = True
 
-        ## Create ToolController Object
-        self.tools = _ToolController(self)
+        ##
+        self.active_layer_index = None
 
-        
-        self.tool = UI_Tool()
-        self.tool.activate(self)
-        
-
-        ## Add capability to detect mouse events
-        self.add_events(Gdk.EventMask.BUTTON_PRESS_MASK)
-        self.add_events(Gdk.EventMask.BUTTON_RELEASE_MASK)
-        self.add_events(Gdk.EventMask.BUTTON1_MOTION_MASK)
-        self.add_events(Gdk.EventMask.BUTTON2_MOTION_MASK)
-        self.add_events(Gdk.EventMask.BUTTON3_MOTION_MASK)
-        self.add_events(Gdk.EventMask.SCROLL_MASK)
-
-        ## Connect Stuff
-        self.connect("configure_event", self.startup)
-        self.connect("scroll-event", self.tools.scroll)
-        self.connect("draw", self.draw)
-        
-        self.connect("button-press-event", self.tools.buttonPress)
-        self.connect("button-release-event", self.tools.buttonRelease)
-        self.connect("motion-notify-event", self.tools.mouseDrag)
 
     def add_layer(self, new_map_layer, index=-1):
         """ """
@@ -340,11 +399,22 @@ class MapCanvas(Gtk.DrawingArea, PyMapKit.Map):
         ## Add layer to layer_list
         if index == -1:
             self._layer_list.insert(len(self._layer_list), new_map_layer)
+            self.active_layer_index = 0
         else:
             self._layer_list.insert(index, new_map_layer)
+            self.active_layer_index = index
         
+        self.emit("layer-added", new_map_layer)
         self.map_updated = True
         self.call_redraw(self)
+
+    def add_tool(self, new_tool):
+        new_tool.activate(self)
+        self.tools.append(new_tool)
+    
+    def remove_tool(self, tool):
+        tool.deactivate()
+        self.tools.remove(tool)
 
     def startup(self, caller, data):
         ## When widget is first created: queue rendering
@@ -397,7 +467,9 @@ class MapCanvas(Gtk.DrawingArea, PyMapKit.Map):
             cr.paint()
             self.render_thread.join(0)
 
-        self.tool.draw(cr)
+
+        for tool in self.tools:
+            tool.draw(cr)
         
         ## Render map in another thread whenever GTK feels like it
         self.call_map_render(self)
