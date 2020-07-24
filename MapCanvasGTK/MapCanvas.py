@@ -22,7 +22,6 @@ import time
 
 
 
-
 class SelectTool(GObject.GObject):
     def __init__(self):
         self.parent = None
@@ -52,14 +51,19 @@ class SelectTool(GObject.GObject):
 
     def select_at_click(self, caller, x, y):
         """ """
-        proj_x, proj_y = self.parent.pix2proj(x, self.parent.height - y)
-
+        ## Get current active layer
         layer = self.parent.get_layer( self.parent.active_layer_index )
-        selected_features = layer.point_select(proj_x, proj_y)
+        if isinstance(layer, PyMapKit.VectorLayer):
+            ## Get proj coords of click
+            proj_x, proj_y = self.parent.pix2proj(x, self.parent.height - y)
 
-        for feature in selected_features:
-            if feature not in self.selected:
-                self.selected.append(feature)
+            ## Get features at point
+            selected_features = layer.point_select(proj_x, proj_y)
+
+            ## Add all selected features to selected_features list
+            for feature in selected_features:
+                if feature not in self.selected:
+                    self.selected.append(feature)
 
         ## Redraw widget with selected features highlighted
         self.parent.call_redraw(self)
@@ -75,7 +79,34 @@ class SelectTool(GObject.GObject):
             self.parent.call_redraw(self)
 
     def select_box_end(self, caller, x, y):
+        ## Set box active to false to stop drawing rectangle
         self.select_box_active = False
+
+        ## Get current active layer, only proceed of VectorLayer
+        layer = self.parent.get_layer( self.parent.active_layer_index )
+        if isinstance(layer, PyMapKit.VectorLayer):
+            ## Get proj coords of start of drag
+            x0, y0 = self.select_box_start_coord
+            
+            ## Get proj coords of 
+            proj_x1, proj_y1 = self.parent.pix2proj(x0, self.parent.height - y0)
+            proj_x2, proj_y2 = self.parent.pix2proj(x, self.parent.height - y)
+
+            ## Get Min and max of projection coords
+            min_x = min(proj_x1, proj_x2)
+            min_y = min(proj_y1, proj_y2)
+            max_x = max(proj_x1, proj_x2)
+            max_y = max(proj_y1, proj_y2)
+
+            ## Get features within selection area
+            selected_features = layer.box_select(min_x, min_y, max_x, max_y)
+
+            ## Add all selected features to selected_features list
+            for feature in selected_features:
+                if feature not in self.selected:
+                    self.selected.append(feature)
+
+        ## Redraw widget with selected features highlighted
         self.parent.call_redraw(self)
 
     def deselect(self, caller, x, y):
@@ -191,6 +222,7 @@ class UITool(GObject.GObject):
     def draw(self, cr):
         """ """
         pass
+
 
 
 class _SignalManager(GObject.GObject):
