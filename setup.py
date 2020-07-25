@@ -26,6 +26,7 @@ setup(
     install_requires=['PyMapKit', 'PyGObject'],
     packages=["MapCanvasGTK",],
     long_description=long_desc_txt,
+    long_description_content_type='text/markdown',
     classifiers=[
         "Development Status :: 1 - Planning",
         "Topic :: Scientific/Engineering :: GIS",
