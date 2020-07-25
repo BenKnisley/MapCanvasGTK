@@ -1,23 +1,31 @@
 #!/usr/bin/env python3
 """
 Author: Ben Knisley [benknisley@gmail.com]
-Date: 17 March, 2020
+Created: 17 March, 2020
 """
 from setuptools import setup
 
+## Extract version from package __init__.py
+from MapCanvasGTK import __version__ as version
+
+## Get long description from readme file
+with open('README.md') as f:
+    long_desc_txt = f.read()
+
+
+
 setup(
     name = "MapCanvasGTK",
-    version = "0.0.0",
+    license = "MIT",
+    version = version,
     author = "Ben Knisley",
     author_email = "benknisley@gmail.com",
-    description = ("A GTK Widget for adding interactive maps to your application."),
+    description = ("A PyGtk (PyGObject) widget for adding a map to your application"),
     url = "https://github.com/BenKnisley/MapCanvasGTK",
-    license = "MIT",
-    keywords = "GIS GTK map MapEngine GUI",
-    #install_requires=['PyGObject', 'MapEngine'],
-    #install_requires=['PyGObject'],
+    keywords = "GIS GTK PyGObjects map PyMapKit GUI",
+    install_requires=['PyMapKit', 'PyGObject'],
     packages=["MapCanvasGTK",],
-    long_description="...",
+    long_description=long_desc_txt,
     classifiers=[
         "Development Status :: 1 - Planning",
         "Topic :: Scientific/Engineering :: GIS",
