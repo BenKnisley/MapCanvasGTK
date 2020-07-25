@@ -1,135 +1,29 @@
 #!/usr/bin/env python3
 """
-Project: MapViewer
-Title: MapView Widget
+Project: PyGTK Map Canvas
+Title: MapCanvas & UITool Classes
+Function: Provides GTK widget for displaying a map.
 Author: Ben Knisley [benknisley@gmail.com]
-Date: 8 December, 2019
-Function: A Gtk Widget that provides a map.
+Created: 8 December, 2019
 """
-## Import built-ins
+## Import Python built-ins
 import threading
+import time
 
 ## Import PyGtk modules
-import cairo
 import gi
+import cairo
 gi.require_version('Gtk', '3.0')
 from gi.repository import Gtk, Gdk, Gio, GObject, GLib
 
 ## Import PyMapKit module
 import PyMapKit
 
-import time
-
-
-
-class SelectTool(GObject.GObject):
-    def __init__(self):
-        self.parent = None
-        self.connection_list = []
-        self.select_box_active = False
-        self.selected = []
-
-    def activate(self, parent):
-        ## Set parent object
-        self.parent = parent
-        ## Setup connection, keeping the reference to each in connection_list
-        self.connection_list.append( self.parent.connect("double-click", self.select_at_click) )
-        self.connection_list.append( self.parent.connect("middle-click", self.deselect) )
-        self.connection_list.append( self.parent.connect("middle-drag-start", self.select_box_start) )
-        self.connection_list.append( self.parent.connect("middle-drag-update", self.select_box_update) )
-        self.connection_list.append( self.parent.connect("middle-drag-end", self.select_box_end) )
-
-    def deactivate(self):
-        ## Reset tool vars
-        self.select_box_active = False
-        self.selected = []
-        ## Disconnect all connection
-        for connect_id in self.connection_list:
-            self.parent.disconnect(connect_id)
-        ## Remove parent
-        self.parent = None
-
-    def select_at_click(self, caller, x, y):
-        """ """
-        ## Get current active layer
-        layer = self.parent.get_layer( self.parent.active_layer_index )
-        if isinstance(layer, PyMapKit.VectorLayer):
-            ## Get proj coords of click
-            proj_x, proj_y = self.parent.pix2proj(x, self.parent.height - y)
-
-            ## Get features at point
-            selected_features = layer.point_select(proj_x, proj_y)
-
-            ## Add all selected features to selected_features list
-            for feature in selected_features:
-                if feature not in self.selected:
-                    self.selected.append(feature)
-
-        ## Redraw widget with selected features highlighted
-        self.parent.call_redraw(self)
-    
-    def select_box_start(self, caller, x, y):
-        self.select_box_active = True
-        self.select_box_start_coord = (x, y)
-        self.select_box_size = (0, 0)
-
-    def select_box_update(self, caller, x, y):
-        if self.select_box_active:
-            self.select_box_size = self.select_box_size[0] + x, self.select_box_size[1] + y
-            self.parent.call_redraw(self)
-
-    def select_box_end(self, caller, x, y):
-        ## Set box active to false to stop drawing rectangle
-        self.select_box_active = False
-
-        ## Get current active layer, only proceed of VectorLayer
-        layer = self.parent.get_layer( self.parent.active_layer_index )
-        if isinstance(layer, PyMapKit.VectorLayer):
-            ## Get proj coords of start of drag
-            x0, y0 = self.select_box_start_coord
-            
-            ## Get proj coords of 
-            proj_x1, proj_y1 = self.parent.pix2proj(x0, self.parent.height - y0)
-            proj_x2, proj_y2 = self.parent.pix2proj(x, self.parent.height - y)
-
-            ## Get Min and max of projection coords
-            min_x = min(proj_x1, proj_x2)
-            min_y = min(proj_y1, proj_y2)
-            max_x = max(proj_x1, proj_x2)
-            max_y = max(proj_y1, proj_y2)
-
-            ## Get features within selection area
-            selected_features = layer.box_select(min_x, min_y, max_x, max_y)
-
-            ## Add all selected features to selected_features list
-            for feature in selected_features:
-                if feature not in self.selected:
-                    self.selected.append(feature)
-
-        ## Redraw widget with selected features highlighted
-        self.parent.call_redraw(self)
-
-    def deselect(self, caller, x, y):
-        self.selected = []
-        self.parent.call_redraw(self)
-
-    def draw(self, cr):
-        """ """
-        if self.select_box_active:
-            print('drawing')
-            print( *self.select_box_start_coord, *self.select_box_size )
-            cr.rectangle(*self.select_box_start_coord, *self.select_box_size)
-            cr.set_source_rgba(0, 1, 1, 0.25)
-            cr.fill_preserve()
-
-            cr.set_source_rgba(0, 1, 1, 1)
-            cr.set_line_width(3)
-            cr.stroke()
-
-        for f in self.selected:
-            f.draw(self.parent.get_layer( self.parent.active_layer_index ), self.parent.renderer, cr, color_over_ride='yellow')
-
 class UITool(GObject.GObject):
+    """
+    A Tool for MapCanvas providing click to pan, scroll to zoom functionality.
+    """
+
     def __init__(self):
         self.parent = None
 
@@ -156,9 +50,12 @@ class UITool(GObject.GObject):
         self.parent.set_proj_coordinate(projx, projy)
 
         self.parent.rendered_map = temp_surface
-        ## Call redraw
+       
+        ## Call redraw of 
         self.parent.call_redraw(self)
-        self.parent.map_updated = True
+        
+        ## Call for map to be rerendered
+        self.parent.call_rerender(self)
 
     def scroll_up(self, caller):
         ##
@@ -182,8 +79,8 @@ class UITool(GObject.GObject):
         ## Call redraw
         self.parent.call_redraw(self)
 
-        self.parent.map_updated = True
         self.parent.set_scale( self.parent.get_scale() / 1.1 )
+        self.parent.call_rerender(self)
 
         ##
         self.parent.call_redraw(self)
@@ -209,7 +106,7 @@ class UITool(GObject.GObject):
         ## Call redraw
         self.parent.call_redraw(self)
 
-        self.parent.map_updated = True
+        self.parent.call_rerender(self)
         self.parent.set_scale( self.parent.get_scale() * 1.1 )
         
         ##
@@ -224,11 +121,12 @@ class UITool(GObject.GObject):
         pass
 
 
-
 class _SignalManager(GObject.GObject):
     """
-    Class to receive signals & abstract higher level functions.
+    Class to receive and send signals on the behalf of MapCanvas to abstract higher 
+    level functions.
     """
+
     def __init__(self, parent):
         """ """
         GObject.GObject.__init__(self)
@@ -242,6 +140,12 @@ class _SignalManager(GObject.GObject):
         self.map.add_events(Gdk.EventMask.BUTTON2_MOTION_MASK)
         self.map.add_events(Gdk.EventMask.BUTTON3_MOTION_MASK)
         self.map.add_events(Gdk.EventMask.SCROLL_MASK)
+
+        ## Connect Stuff
+        self.map.connect("scroll-event", self.scroll)
+        self.map.connect("button-press-event", self.buttonPress)
+        self.map.connect("button-release-event", self.buttonRelease)
+        self.map.connect("motion-notify-event", self.mouseDrag)
 
 
         ## Create custom signals
@@ -265,15 +169,6 @@ class _SignalManager(GObject.GObject):
         GObject.signal_new("right-drag-start", self.map, GObject.SIGNAL_RUN_FIRST, None, (int, int,)) 
         GObject.signal_new("right-drag-update", self.map, GObject.SIGNAL_RUN_FIRST, None, (int, int,)) 
         GObject.signal_new("right-drag-end", self.map, GObject.SIGNAL_RUN_FIRST, None, (int, int,)) 
-
-
-        
-        ## Connect Stuff
-        self.map.connect("scroll-event", self.scroll)
-        self.map.connect("button-press-event", self.buttonPress)
-        self.map.connect("button-release-event", self.buttonRelease)
-        self.map.connect("motion-notify-event", self.mouseDrag)
-
 
 
         ## Define public mouse button trackers
@@ -392,26 +287,34 @@ class _SignalManager(GObject.GObject):
 
 
 class MapCanvas(Gtk.DrawingArea, PyMapKit.Map):
-    """ """
-    def __init__(self):
+    """
+    A widget that renders a map.
+    """
+
+    def __init__(self, add_UITool=True):
         """ """
         ## Implement inheritance from GObject, DrawingArea, and PyMapKit.Map
         GObject.GObject.__init__(self)
         Gtk.DrawingArea.__init__(self)
         PyMapKit.Map.__init__(self)
+
+        ## Create _SignalManager Object to handle map signals for us
+        self.signal_man = _SignalManager(self)
         
         ## Connect basic widget signals
-        self.connect("configure_event", self.startup)
+        self.connect("configure_event", self.refresh_window)
+        self.connect("size-allocate", self.refresh_window)
         self.connect("draw", self.draw)
         
-        ## Create _SignalManager Object to handle map signals
-        self.signal_man = _SignalManager(self)
+        ## Set map attributes
+        self.set_background_color('black')
 
         ## Add a list to hold tools
         self.tools = []
 
-        ## Set map attributes
-        self.set_background_color('black')
+        ## UITool flag is true, add a UItool
+        if add_UITool:
+            self.add_tool(UITool())
 
         ## Create background rendering thread variables
         self.rendered_map = None
@@ -421,24 +324,8 @@ class MapCanvas(Gtk.DrawingArea, PyMapKit.Map):
 
         ##
         self.active_layer_index = None
-
-
-    def add_layer(self, new_map_layer, index=-1):
-        """ """
-        ## Call new_map_layer activate function
-        new_map_layer._activate(self)
-
-        ## Add layer to layer_list
-        if index == -1:
-            self._layer_list.insert(len(self._layer_list), new_map_layer)
-            self.active_layer_index = 0
-        else:
-            self._layer_list.insert(index, new_map_layer)
-            self.active_layer_index = index
-        
-        self.emit("layer-added", new_map_layer)
-        self.map_updated = True
-        self.call_redraw(self)
+    
+    """ Tool Functions """
 
     def add_tool(self, new_tool):
         new_tool.activate(self)
@@ -448,11 +335,30 @@ class MapCanvas(Gtk.DrawingArea, PyMapKit.Map):
         tool.deactivate()
         self.tools.remove(tool)
 
-    def startup(self, caller, data):
-        ## When widget is first created: queue rendering
-        self.call_map_render(self)
+    """ Overriding and extending Map methods """
 
-    def call_map_render(self, caller):
+    def add_layer(self, new_map_layer, index=-1):
+        """ """
+        #@ Extend PyMapKit.add_layer
+        super().add_layer(new_map_layer, index)
+
+        ## 
+        self.emit("layer-added", new_map_layer)
+        self.call_rerender(self)
+        self.call_redraw(self)
+
+    """ Slots Methods """
+    def refresh_window(self, caller, data):
+        """ """
+        ## When widget is first created: queue rendering
+        self.call_rerender(self)
+        self.call_redraw(self)
+
+    """ Map Rendering functions """
+    
+    def call_rerender(self, caller):
+        """ Hard ask map to rerender """
+        self.map_updated = True
         GObject.idle_add(self.start_render_thread)
 
     def start_render_thread(self):
@@ -482,6 +388,8 @@ class MapCanvas(Gtk.DrawingArea, PyMapKit.Map):
 
         self.call_redraw(self)
     
+    """ Widget Drawing functions """
+
     def call_redraw(self, caller):
         """ Asks canvas to redraw itself """
         self.queue_draw()
@@ -499,9 +407,8 @@ class MapCanvas(Gtk.DrawingArea, PyMapKit.Map):
             cr.paint()
             self.render_thread.join(0)
 
-
         for tool in self.tools:
             tool.draw(cr)
         
-        ## Render map in another thread whenever GTK feels like it
-        self.call_map_render(self)
+        ## Draw map again
+        self.call_redraw(self)
