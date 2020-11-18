@@ -150,6 +150,7 @@ class _SignalManager(GObject.GObject):
 
         ## Create custom signals
         GObject.signal_new("layer-added", self.map, GObject.SIGNAL_RUN_FIRST, None, (object,)) 
+        GObject.signal_new("layer-removed", self.map, GObject.SIGNAL_RUN_FIRST, None, (object,)) 
 
         GObject.signal_new("scroll-up", self.map, GObject.SIGNAL_RUN_FIRST, None, ()) 
         GObject.signal_new("scroll-down", self.map, GObject.SIGNAL_RUN_FIRST, None, ()) 
@@ -344,6 +345,16 @@ class MapCanvas(Gtk.DrawingArea, PyMapKit.Map):
 
         ## 
         self.emit("layer-added", new_map_layer)
+        self.call_rerender(self)
+        self.call_redraw(self)
+
+    def remove_layer(self, remove_layer):
+        """ """
+        #@ Extend PyMapKit.remove_layer
+        super().remove_layer(remove_layer)
+
+        ## 
+        self.emit("layer-removed", remove_layer)
         self.call_rerender(self)
         self.call_redraw(self)
 
