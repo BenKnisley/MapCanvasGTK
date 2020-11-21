@@ -151,6 +151,9 @@ class _SignalManager(GObject.GObject):
         ## Create custom signals
         GObject.signal_new("layer-added", self.map, GObject.SIGNAL_RUN_FIRST, None, (object,)) 
         GObject.signal_new("layer-removed", self.map, GObject.SIGNAL_RUN_FIRST, None, (object,)) 
+        
+         
+        GObject.signal_new("location-changed", self.map, GObject.SIGNAL_RUN_FIRST, None, (float, float, float, float)) 
 
         GObject.signal_new("scroll-up", self.map, GObject.SIGNAL_RUN_FIRST, None, ()) 
         GObject.signal_new("scroll-down", self.map, GObject.SIGNAL_RUN_FIRST, None, ()) 
@@ -302,6 +305,9 @@ class MapCanvas(Gtk.DrawingArea, PyMapKit.Map):
         ## Create _SignalManager Object to handle map signals for us
         self.signal_man = _SignalManager(self)
         
+        ## Allow map to have keyboard focus
+        self.set_can_focus(True)
+
         ## Connect basic widget signals
         self.connect("configure_event", self.refresh_window)
         self.connect("size-allocate", self.refresh_window)
@@ -336,8 +342,13 @@ class MapCanvas(Gtk.DrawingArea, PyMapKit.Map):
         tool.deactivate()
         self.tools.remove(tool)
 
-    """ Overriding and extending Map methods """
+    def set_proj_coordinate(self, new_proj_x, new_proj_y):
+        super().set_proj_coordinate(new_proj_x, new_proj_y)
+        self.emit("location-changed", *self.proj2geo(new_proj_x, new_proj_y), new_proj_x, new_proj_y)
 
+
+
+    """ Overriding and extending Map methods """
     def add_layer(self, new_map_layer, index=-1):
         """ """
         #@ Extend PyMapKit.add_layer
