@@ -289,7 +289,6 @@ class _SignalManager(GObject.GObject):
         else:
             self.map.emit("scroll-down")
 
-
 class MapCanvas(Gtk.DrawingArea, PyMapKit.Map):
     """
     A widget that renders a map.
@@ -331,6 +330,15 @@ class MapCanvas(Gtk.DrawingArea, PyMapKit.Map):
 
         ##
         self.active_layer_index = None
+
+
+        def ding():
+            print('ding')
+            self.call_rerender(self)
+            GObject.timeout_add(1000, ding)
+
+        ##
+        GObject.timeout_add(1000, ding)
     
     """ Tool Functions """
 
@@ -411,9 +419,12 @@ class MapCanvas(Gtk.DrawingArea, PyMapKit.Map):
         self.call_redraw(self)
     
     """ Widget Drawing functions """
-
     def call_redraw(self, caller):
         """ Asks canvas to redraw itself """
+
+        #! ADD A STATMETE THAT IF A LAYER NEEDS REDRAWN CALL RERENDER
+
+
         self.queue_draw()
 
     def draw(self, caller, cr):
@@ -433,4 +444,4 @@ class MapCanvas(Gtk.DrawingArea, PyMapKit.Map):
             tool.draw(cr)
         
         ## Draw map again
-        self.call_redraw(self)
+        #self.call_redraw(self)
